@@ -10,12 +10,19 @@ import type { Reminder } from '@/types/reminder';
 
 type ReminderCardProps = {
   reminder: Reminder;
-  onComplete: (id: string) => void;
+  dueDateLabel?: string;
+  onComplete?: (id: string) => void;
   onDelete: (id: string) => void;
   onOpen: (id: string) => void;
 };
 
-function ReminderCardComponent({ reminder, onComplete, onDelete, onOpen }: ReminderCardProps) {
+function ReminderCardComponent({
+  reminder,
+  dueDateLabel = 'Heute',
+  onComplete,
+  onDelete,
+  onOpen,
+}: ReminderCardProps) {
   const theme = useTheme();
 
   return (
@@ -48,7 +55,7 @@ function ReminderCardComponent({ reminder, onComplete, onDelete, onOpen }: Remin
 
         <View style={styles.metaRow}>
           <ThemedText type="smallBold" themeColor="textSecondary">
-            Fällig: Heute
+            Fällig: {dueDateLabel}
           </ThemedText>
           {reminder.time ? (
             <ThemedText type="smallBold" themeColor="textSecondary">
@@ -62,20 +69,22 @@ function ReminderCardComponent({ reminder, onComplete, onDelete, onOpen }: Remin
       </Pressable>
 
       <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={reminder.isCompleted}
-          onPress={() => onComplete(reminder.id)}
-          style={({ pressed }) => [
-            styles.actionButton,
-            { borderColor: theme.border },
-            pressed && styles.pressed,
-            reminder.isCompleted && styles.disabledAction,
-          ]}>
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            {reminder.isCompleted ? 'Erledigt' : 'Erledigt markieren'}
-          </ThemedText>
-        </Pressable>
+        {onComplete ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={reminder.isCompleted}
+            onPress={() => onComplete(reminder.id)}
+            style={({ pressed }) => [
+              styles.actionButton,
+              { borderColor: theme.border },
+              pressed && styles.pressed,
+              reminder.isCompleted && styles.disabledAction,
+            ]}>
+            <ThemedText type="smallBold" themeColor="textSecondary">
+              {reminder.isCompleted ? 'Erledigt' : 'Erledigt markieren'}
+            </ThemedText>
+          </Pressable>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"

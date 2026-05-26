@@ -194,6 +194,33 @@ export async function getReminders() {
   return rows.map(mapReminderRow);
 }
 
+export async function getAllReminders() {
+  await initializeDatabase();
+
+  const database = await getDatabase();
+  const rows = await database.getAllAsync<ReminderRow>(
+    `SELECT
+      id,
+      title,
+      description,
+      time,
+      repeat_type,
+      custom_interval_days,
+      due_date,
+      notification_id,
+      is_completed,
+      created_at,
+      updated_at
+    FROM reminders
+    ORDER BY due_date ASC,
+      CASE WHEN time IS NULL THEN 1 ELSE 0 END ASC,
+      time ASC,
+      created_at DESC`
+  );
+
+  return rows.map(mapReminderRow);
+}
+
 export async function getTodayReminders(today: string) {
   await initializeDatabase();
 

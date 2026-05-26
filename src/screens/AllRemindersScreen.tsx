@@ -1,19 +1,17 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 
-import { PrimaryButton } from '@/components/PrimaryButton';
 import { ReminderCard } from '@/components/ReminderCard';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { deleteReminder, getTodayReminders, markReminderCompleted } from '@/database/reminders';
+import { deleteReminder, getAllReminders } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { Reminder } from '@/types/reminder';
-import { getTodayDateKey } from '@/utils/dueDate';
 
-export default function TodayScreen() {
+export default function AllRemindersScreen() {
   const theme = useTheme();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -21,7 +19,7 @@ export default function TodayScreen() {
   const loadReminders = useCallback(async () => {
     try {
       setStatus('loading');
-      const storedReminders = await getTodayReminders(getTodayDateKey());
+      const storedReminders = await getAllReminders();
       setReminders(storedReminders);
       setStatus('ready');
     } catch {
@@ -33,18 +31,6 @@ export default function TodayScreen() {
     useCallback(() => {
       void loadReminders();
     }, [loadReminders])
-  );
-
-  const handleCompleteReminder = useCallback(
-    async (id: string) => {
-      try {
-        await markReminderCompleted(id);
-        await loadReminders();
-      } catch {
-        setStatus('error');
-      }
-    },
-    [loadReminders]
   );
 
   const handleDeleteReminder = useCallback(
@@ -78,21 +64,12 @@ export default function TodayScreen() {
   }, []);
 
   return (
-    <ScreenScaffold
-      footer={<PrimaryButton label="Neue Erinnerung" onPress={() => router.push('/create-reminder')} />}>
+    <ScreenScaffold>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <ThemedText type="subtitle" style={styles.title}>
-            Heute
+            Alle Erinnerungen
           </ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/reminders/index')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Alle Erinnerungen
-            </ThemedText>
-          </Pressable>
         </View>
 
         {status === 'loading' ? (
@@ -109,7 +86,7 @@ export default function TodayScreen() {
 
         {status === 'ready' && reminders.length === 0 ? (
           <ThemedView type="surface" style={[styles.emptyCard, { borderColor: theme.border }]}>
-            <ThemedText style={styles.emptyTitle}>Heute stehen keine Erinnerungen an.</ThemedText>
+            <ThemedText style={styles.emptyTitle}>Noch keine Erinnerungen erstellt.</ThemedText>
           </ThemedView>
         ) : null}
 
@@ -119,7 +96,7 @@ export default function TodayScreen() {
               <ReminderCard
                 key={reminder.id}
                 reminder={reminder}
-                onComplete={handleCompleteReminder}
+                dueDateLabel={reminder.dueDate}
                 onDelete={handleDeleteReminder}
                 onOpen={handleOpenReminder}
               />
@@ -137,11 +114,10 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: Spacing.four,
-    gap: Spacing.two,
   },
   title: {
-    fontSize: 36,
-    lineHeight: 42,
+    fontSize: 34,
+    lineHeight: 40,
   },
   emptyCard: {
     borderWidth: 1,
@@ -156,13 +132,5 @@ const styles = StyleSheet.create({
   },
   reminderList: {
     gap: Spacing.three,
-  },
-  secondaryLink: {
-    minHeight: 44,
-    alignSelf: 'flex-start',
-    justifyContent: 'center',
-  },
-  pressed: {
-    opacity: 0.72,
   },
 });
