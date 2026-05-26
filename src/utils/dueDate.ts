@@ -69,8 +69,8 @@ export function getDueDateLabel(dueDate: string, today = getTodayDateKey()) {
   }
 
   if (dueDate === today) {
-    return 'Heute';
+    return 'Fällig: Heute';
   }
 
-  return dueDate;
+  return `Fällig: ${dueDate}`;
 }

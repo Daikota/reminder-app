@@ -10,6 +10,7 @@ import { Spacing } from '@/constants/theme';
 import { deleteReminder, getAllReminders } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { Reminder } from '@/types/reminder';
+import { getDueDateLabel } from '@/utils/dueDate';
 
 export default function AllRemindersScreen() {
   const theme = useTheme();
@@ -96,7 +97,7 @@ export default function AllRemindersScreen() {
               <ReminderCard
                 key={reminder.id}
                 reminder={reminder}
-                dueDateLabel={reminder.dueDate}
+                dueDateLabel={getDueDateLabel(reminder.dueDate)}
                 onDelete={handleDeleteReminder}
                 onOpen={handleOpenReminder}
               />

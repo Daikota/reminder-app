@@ -18,7 +18,7 @@ type ReminderCardProps = {
 
 function ReminderCardComponent({
   reminder,
-  dueDateLabel = 'Heute',
+  dueDateLabel = 'Fällig: Heute',
   onComplete,
   onDelete,
   onOpen,
@@ -55,7 +55,7 @@ function ReminderCardComponent({
 
         <View style={styles.metaRow}>
           <ThemedText type="smallBold" themeColor="textSecondary">
-            Fällig: {dueDateLabel}
+            {dueDateLabel}
           </ThemedText>
           {reminder.time ? (
             <ThemedText type="smallBold" themeColor="textSecondary">

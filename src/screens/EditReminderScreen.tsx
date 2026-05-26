@@ -102,7 +102,11 @@ export default function EditReminderScreen() {
         repeatType,
         customIntervalDays: parsedCustomIntervalDays,
       });
-      router.replace('/');
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/');
+      }
     } catch {
       setErrorMessage('Speichern ist fehlgeschlagen.');
     } finally {
