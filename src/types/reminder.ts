@@ -7,6 +7,7 @@ export type Reminder = {
   time: string | null;
   repeatType: ReminderRepeatType;
   customIntervalDays: number | null;
+  dueDate: string;
   isCompleted: boolean;
   createdAt: string;
   updatedAt: string;

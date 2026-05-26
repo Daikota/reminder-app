@@ -47,6 +47,9 @@ function ReminderCardComponent({ reminder, onComplete, onDelete, onOpen }: Remin
         ) : null}
 
         <View style={styles.metaRow}>
+          <ThemedText type="smallBold" themeColor="textSecondary">
+            Fällig: Heute
+          </ThemedText>
           {reminder.time ? (
             <ThemedText type="smallBold" themeColor="textSecondary">
               {reminder.time}

@@ -8,9 +8,10 @@ import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { deleteReminder, getReminders, markReminderCompleted } from '@/database/reminders';
+import { deleteReminder, getTodayReminders, markReminderCompleted } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { Reminder } from '@/types/reminder';
+import { getTodayDateKey } from '@/utils/dueDate';
 
 export default function TodayScreen() {
   const theme = useTheme();
@@ -20,7 +21,7 @@ export default function TodayScreen() {
   const loadReminders = useCallback(async () => {
     try {
       setStatus('loading');
-      const storedReminders = await getReminders();
+      const storedReminders = await getTodayReminders(getTodayDateKey());
       setReminders(storedReminders);
       setStatus('ready');
     } catch {
