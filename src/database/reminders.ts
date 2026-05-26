@@ -93,7 +93,8 @@ export async function createReminder(input: CreateReminderInput) {
     description,
     time: input.time ?? null,
     repeatType: input.repeatType ?? 'daily',
-    customIntervalDays: input.customIntervalDays ?? null,
+    customIntervalDays:
+      input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
     isCompleted: false,
     createdAt: now,
     updatedAt: now,
@@ -180,8 +181,23 @@ export async function updateReminder(input: UpdateReminderInput) {
   const description = input.description?.trim() ? input.description.trim() : null;
 
   await database.runAsync(
-    'UPDATE reminders SET title = ?, description = ?, updated_at = ? WHERE id = ?',
-    [input.title.trim(), description, now, input.id]
+    `UPDATE reminders
+      SET title = ?,
+        description = ?,
+        time = ?,
+        repeat_type = ?,
+        custom_interval_days = ?,
+        updated_at = ?
+      WHERE id = ?`,
+    [
+      input.title.trim(),
+      description,
+      input.time ?? null,
+      input.repeatType,
+      input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
+      now,
+      input.id,
+    ]
   );
 }
 
@@ -205,7 +221,7 @@ export async function deleteReminder(id: string) {
   await database.runAsync('DELETE FROM reminders WHERE id = ?', [id]);
 }
 
-export function getRepeatLabel(repeatType: ReminderRepeatType) {
+export function getRepeatLabel(repeatType: ReminderRepeatType, customIntervalDays?: number | null) {
   if (repeatType === 'weekly') {
     return 'Wöchentlich';
   }
@@ -215,7 +231,7 @@ export function getRepeatLabel(repeatType: ReminderRepeatType) {
   }
 
   if (repeatType === 'custom_days') {
-    return 'Individuell';
+    return customIntervalDays ? `Alle ${customIntervalDays} Tage` : 'Alle X Tage';
   }
 
   return 'Täglich';

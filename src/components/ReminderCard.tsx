@@ -46,9 +46,16 @@ function ReminderCardComponent({ reminder, onComplete, onDelete, onOpen }: Remin
           </ThemedText>
         ) : null}
 
-        <ThemedText type="smallBold" themeColor="textSecondary">
-          {getRepeatLabel(reminder.repeatType)}
-        </ThemedText>
+        <View style={styles.metaRow}>
+          {reminder.time ? (
+            <ThemedText type="smallBold" themeColor="textSecondary">
+              {reminder.time}
+            </ThemedText>
+          ) : null}
+          <ThemedText type="smallBold" themeColor="textSecondary">
+            {getRepeatLabel(reminder.repeatType, reminder.customIntervalDays)}
+          </ThemedText>
+        </View>
       </Pressable>
 
       <View style={styles.actions}>
@@ -119,6 +126,11 @@ const styles = StyleSheet.create({
   },
   description: {
     fontWeight: 500,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
   },
   actions: {
     flexDirection: 'row',

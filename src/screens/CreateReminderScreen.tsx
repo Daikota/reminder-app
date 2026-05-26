@@ -2,17 +2,23 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { OptionPlaceholder } from '@/components/OptionPlaceholder';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { RepeatSelector } from '@/components/RepeatSelector';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
+import { TimeInput } from '@/components/TimeInput';
 import { Spacing } from '@/constants/theme';
 import { createReminder } from '@/database/reminders';
+import type { ReminderRepeatType } from '@/types/reminder';
+import { normalizeOptionalTime, parseCustomIntervalDays } from '@/utils/reminderValidation';
 
 export default function CreateReminderScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [time, setTime] = useState('');
+  const [repeatType, setRepeatType] = useState<ReminderRepeatType>('daily');
+  const [customIntervalDays, setCustomIntervalDays] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -24,15 +30,29 @@ export default function CreateReminderScreen() {
       return;
     }
 
+    const normalizedTime = normalizeOptionalTime(time);
+
+    if (normalizedTime === undefined) {
+      setErrorMessage('Uhrzeit bitte als HH:mm eingeben.');
+      return;
+    }
+
+    const parsedCustomIntervalDays = parseCustomIntervalDays(customIntervalDays, repeatType);
+
+    if (parsedCustomIntervalDays === undefined) {
+      setErrorMessage('Intervall muss mindestens 1 Tag sein.');
+      return;
+    }
+
     try {
       setIsSaving(true);
       setErrorMessage(null);
       await createReminder({
         title: normalizedTitle,
         description,
-        time: null,
-        repeatType: 'daily',
-        customIntervalDays: null,
+        time: normalizedTime,
+        repeatType,
+        customIntervalDays: parsedCustomIntervalDays,
       });
       router.replace('/');
     } catch {
@@ -77,8 +97,41 @@ export default function CreateReminderScreen() {
             onChangeText={setDescription}
             style={styles.descriptionInput}
           />
-          <OptionPlaceholder label="Uhrzeit" value="Noch nicht ausgewählt" />
-          <OptionPlaceholder label="Wiederholung" value="Keine Wiederholung" />
+          <TimeInput
+            value={time}
+            onChangeText={(value) => {
+              setTime(value);
+              if (errorMessage) {
+                setErrorMessage(null);
+              }
+            }}
+          />
+          <RepeatSelector
+            value={repeatType}
+            onChange={(value) => {
+              setRepeatType(value);
+              if (value !== 'custom_days') {
+                setCustomIntervalDays('');
+              }
+              if (errorMessage) {
+                setErrorMessage(null);
+              }
+            }}
+          />
+          {repeatType === 'custom_days' ? (
+            <TextField
+              label="Tage"
+              placeholder="7"
+              keyboardType="number-pad"
+              value={customIntervalDays}
+              onChangeText={(value) => {
+                setCustomIntervalDays(value);
+                if (errorMessage) {
+                  setErrorMessage(null);
+                }
+              }}
+            />
+          ) : null}
           {errorMessage ? (
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.errorText}>
               {errorMessage}
