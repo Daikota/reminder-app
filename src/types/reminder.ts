@@ -19,3 +19,9 @@ export type CreateReminderInput = {
   repeatType?: ReminderRepeatType;
   customIntervalDays?: number | null;
 };
+
+export type UpdateReminderInput = {
+  id: string;
+  title: string;
+  description?: string | null;
+};

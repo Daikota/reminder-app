@@ -74,6 +74,7 @@ export default function RootLayout() {
           }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="create-reminder" />
+          <Stack.Screen name="reminders/[id]" />
         </Stack>
       ) : (
         <ThemedView style={styles.statusContainer}>

@@ -69,6 +69,13 @@ export default function TodayScreen() {
     [loadReminders]
   );
 
+  const handleOpenReminder = useCallback((id: string) => {
+    router.push({
+      pathname: '/reminders/[id]',
+      params: { id },
+    });
+  }, []);
+
   return (
     <ScreenScaffold
       footer={<PrimaryButton label="Neue Erinnerung" onPress={() => router.push('/create-reminder')} />}>
@@ -105,6 +112,7 @@ export default function TodayScreen() {
                 reminder={reminder}
                 onComplete={handleCompleteReminder}
                 onDelete={handleDeleteReminder}
+                onOpen={handleOpenReminder}
               />
             ))}
           </View>

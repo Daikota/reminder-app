@@ -1,6 +1,11 @@
 import * as SQLite from 'expo-sqlite';
 
-import type { CreateReminderInput, Reminder, ReminderRepeatType } from '@/types/reminder';
+import type {
+  CreateReminderInput,
+  Reminder,
+  ReminderRepeatType,
+  UpdateReminderInput,
+} from '@/types/reminder';
 
 const DATABASE_NAME = 'reminder-app.db';
 
@@ -142,6 +147,42 @@ export async function getReminders() {
   );
 
   return rows.map(mapReminderRow);
+}
+
+export async function getReminderById(id: string) {
+  await initializeDatabase();
+
+  const database = await getDatabase();
+  const row = await database.getFirstAsync<ReminderRow>(
+    `SELECT
+      id,
+      title,
+      description,
+      time,
+      repeat_type,
+      custom_interval_days,
+      is_completed,
+      created_at,
+      updated_at
+    FROM reminders
+    WHERE id = ?`,
+    [id]
+  );
+
+  return row ? mapReminderRow(row) : null;
+}
+
+export async function updateReminder(input: UpdateReminderInput) {
+  await initializeDatabase();
+
+  const database = await getDatabase();
+  const now = new Date().toISOString();
+  const description = input.description?.trim() ? input.description.trim() : null;
+
+  await database.runAsync(
+    'UPDATE reminders SET title = ?, description = ?, updated_at = ? WHERE id = ?',
+    [input.title.trim(), description, now, input.id]
+  );
 }
 
 export async function markReminderCompleted(id: string) {

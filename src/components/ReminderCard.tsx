@@ -12,37 +12,44 @@ type ReminderCardProps = {
   reminder: Reminder;
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
+  onOpen: (id: string) => void;
 };
 
-function ReminderCardComponent({ reminder, onComplete, onDelete }: ReminderCardProps) {
+function ReminderCardComponent({ reminder, onComplete, onDelete, onOpen }: ReminderCardProps) {
   const theme = useTheme();
 
   return (
-    <ThemedView
-      type="surface"
-      style={[styles.card, { borderColor: theme.border, opacity: reminder.isCompleted ? 0.68 : 1 }]}>
-      <View style={styles.titleRow}>
-        <ThemedText style={[styles.title, reminder.isCompleted && styles.completedTitle]}>
-          {reminder.title}
-        </ThemedText>
-        {reminder.isCompleted ? (
-          <ThemedView type="surfaceMuted" style={[styles.statusPill, { borderColor: theme.border }]}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Erledigt
-            </ThemedText>
-          </ThemedView>
+    <ThemedView type="surface" style={[styles.card, { borderColor: theme.border }]}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => onOpen(reminder.id)}
+        style={({ pressed }) => [
+          styles.contentPressable,
+          { opacity: reminder.isCompleted ? 0.68 : pressed ? 0.78 : 1 },
+        ]}>
+        <View style={styles.titleRow}>
+          <ThemedText style={[styles.title, reminder.isCompleted && styles.completedTitle]}>
+            {reminder.title}
+          </ThemedText>
+          {reminder.isCompleted ? (
+            <ThemedView type="surfaceMuted" style={[styles.statusPill, { borderColor: theme.border }]}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Erledigt
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+        </View>
+
+        {reminder.description ? (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
+            {reminder.description}
+          </ThemedText>
         ) : null}
-      </View>
 
-      {reminder.description ? (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
-          {reminder.description}
+        <ThemedText type="smallBold" themeColor="textSecondary">
+          {getRepeatLabel(reminder.repeatType)}
         </ThemedText>
-      ) : null}
-
-      <ThemedText type="smallBold" themeColor="textSecondary">
-        {getRepeatLabel(reminder.repeatType)}
-      </ThemedText>
+      </Pressable>
 
       <View style={styles.actions}>
         <Pressable
@@ -85,6 +92,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
+    gap: Spacing.two,
+  },
+  contentPressable: {
     gap: Spacing.two,
   },
   titleRow: {
