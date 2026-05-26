@@ -71,7 +71,10 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   option: {
+    flexBasis: '47%',
+    flexGrow: 1,
     minHeight: 44,
+    minWidth: 112,
     borderWidth: 1,
     borderRadius: 16,
     alignItems: 'center',
@@ -81,5 +84,6 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     lineHeight: 18,
+    textAlign: 'center',
   },
 });

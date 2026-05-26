@@ -88,7 +88,11 @@ export default function TodayScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/reminders/index')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}>
+            style={({ pressed }) => [
+              styles.secondaryLink,
+              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              pressed && styles.pressed,
+            ]}>
             <ThemedText type="smallBold" themeColor="textSecondary">
               Alle Erinnerungen
             </ThemedText>
@@ -134,15 +138,15 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: Spacing.four,
+    paddingBottom: Spacing.six,
   },
   header: {
-    marginBottom: Spacing.four,
+    marginBottom: Spacing.three,
     gap: Spacing.two,
   },
   title: {
-    fontSize: 36,
-    lineHeight: 42,
+    fontSize: 34,
+    lineHeight: 40,
   },
   emptyCard: {
     borderWidth: 1,
@@ -160,7 +164,10 @@ const styles = StyleSheet.create({
   },
   secondaryLink: {
     minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 16,
     alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.three,
     justifyContent: 'center',
   },
   pressed: {

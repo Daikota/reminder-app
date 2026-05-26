@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedView } from '@/components/themed-view';
@@ -13,10 +13,14 @@ type ScreenScaffoldProps = {
 export function ScreenScaffold({ children, footer }: ScreenScaffoldProps) {
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>{children}</View>
-        {footer ? <View style={styles.footer}>{footer}</View> : null}
-      </SafeAreaView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardAvoidingView}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.content}>{children}</View>
+          {footer ? <View style={styles.footer}>{footer}</View> : null}
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </ThemedView>
   );
 }
@@ -25,17 +29,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
   },
   content: {
     flex: 1,
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
+    paddingTop: Spacing.four,
   },
   footer: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
   },
 });

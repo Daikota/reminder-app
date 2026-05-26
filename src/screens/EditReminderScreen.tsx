@@ -127,6 +127,7 @@ export default function EditReminderScreen() {
       }>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
@@ -219,14 +220,14 @@ export default function EditReminderScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: Spacing.four,
+    paddingBottom: Spacing.six,
   },
   header: {
-    marginBottom: Spacing.four,
+    marginBottom: Spacing.three,
   },
   title: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 32,
+    lineHeight: 38,
   },
   form: {
     gap: Spacing.three,

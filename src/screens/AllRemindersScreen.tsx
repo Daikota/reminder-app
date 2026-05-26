@@ -111,14 +111,14 @@ export default function AllRemindersScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: Spacing.four,
+    paddingBottom: Spacing.six,
   },
   header: {
-    marginBottom: Spacing.four,
+    marginBottom: Spacing.three,
   },
   title: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 32,
+    lineHeight: 38,
   },
   emptyCard: {
     borderWidth: 1,

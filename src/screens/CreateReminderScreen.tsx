@@ -67,6 +67,7 @@ export default function CreateReminderScreen() {
       footer={<PrimaryButton label={isSaving ? 'Speichert...' : 'Speichern'} disabled={isSaving} onPress={handleSave} />}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
@@ -145,14 +146,14 @@ export default function CreateReminderScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: Spacing.four,
+    paddingBottom: Spacing.six,
   },
   header: {
-    marginBottom: Spacing.four,
+    marginBottom: Spacing.three,
   },
   title: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 32,
+    lineHeight: 38,
   },
   form: {
     gap: Spacing.three,

@@ -54,17 +54,23 @@ function ReminderCardComponent({
         ) : null}
 
         <View style={styles.metaRow}>
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            {dueDateLabel}
-          </ThemedText>
-          {reminder.time ? (
+          <ThemedView type="surfaceMuted" style={[styles.metaPill, { borderColor: theme.border }]}>
             <ThemedText type="smallBold" themeColor="textSecondary">
-              {reminder.time}
+              {dueDateLabel}
             </ThemedText>
+          </ThemedView>
+          {reminder.time ? (
+            <ThemedView type="surfaceMuted" style={[styles.metaPill, { borderColor: theme.border }]}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                {reminder.time}
+              </ThemedText>
+            </ThemedView>
           ) : null}
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            {getRepeatLabel(reminder.repeatType, reminder.customIntervalDays)}
-          </ThemedText>
+          <ThemedView type="surfaceMuted" style={[styles.metaPill, { borderColor: theme.border }]}>
+            <ThemedText type="smallBold" themeColor="textSecondary">
+              {getRepeatLabel(reminder.repeatType, reminder.customIntervalDays)}
+            </ThemedText>
+          </ThemedView>
         </View>
       </Pressable>
 
@@ -81,7 +87,7 @@ function ReminderCardComponent({
               reminder.isCompleted && styles.disabledAction,
             ]}>
             <ThemedText type="smallBold" themeColor="textSecondary">
-              {reminder.isCompleted ? 'Erledigt' : 'Erledigt markieren'}
+              Erledigt
             </ThemedText>
           </Pressable>
         ) : null}
@@ -109,12 +115,13 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderRadius: 24,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
-    gap: Spacing.two,
+    gap: Spacing.three,
   },
   contentPressable: {
     gap: Spacing.two,
+    minHeight: 44,
   },
   titleRow: {
     flexDirection: 'row',
@@ -144,19 +151,27 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.two,
   },
+  metaPill: {
+    maxWidth: '100%',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
   actions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
-    marginTop: Spacing.two,
   },
   actionButton: {
     minHeight: 44,
+    minWidth: 112,
     borderWidth: 1,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
-    flex: 1,
+    flexGrow: 1,
   },
   pressed: {
     opacity: 0.72,
