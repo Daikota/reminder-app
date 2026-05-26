@@ -247,6 +247,35 @@ export async function getTodayReminders(today: string) {
   return rows.map(mapReminderRow);
 }
 
+export async function getDueReminders(today: string) {
+  await initializeDatabase();
+
+  const database = await getDatabase();
+  const rows = await database.getAllAsync<ReminderRow>(
+    `SELECT
+      id,
+      title,
+      description,
+      time,
+      repeat_type,
+      custom_interval_days,
+      due_date,
+      notification_id,
+      is_completed,
+      created_at,
+      updated_at
+    FROM reminders
+    WHERE due_date <= ?
+    ORDER BY due_date ASC,
+      CASE WHEN time IS NULL THEN 1 ELSE 0 END ASC,
+      time ASC,
+      created_at DESC`,
+    [today]
+  );
+
+  return rows.map(mapReminderRow);
+}
+
 export async function getReminderById(id: string) {
   await initializeDatabase();
 
@@ -344,7 +373,7 @@ export async function markReminderCompleted(id: string) {
 
   const database = await getDatabase();
   const now = new Date().toISOString();
-  const nextDueDate = getNextDueDate(reminder);
+  const nextDueDate = getNextDueDate(reminder, getTodayDateKey());
   const nextReminder: Reminder = {
     ...reminder,
     dueDate: nextDueDate,

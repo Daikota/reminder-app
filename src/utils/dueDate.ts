@@ -49,13 +49,28 @@ function getRepeatIntervalDays(repeatType: ReminderRepeatType, customIntervalDay
   return 1;
 }
 
-export function getNextDueDate(reminder: Pick<Reminder, 'dueDate' | 'repeatType' | 'customIntervalDays'>) {
+export function getNextDueDate(
+  reminder: Pick<Reminder, 'dueDate' | 'repeatType' | 'customIntervalDays'>,
+  fromDate = reminder.dueDate
+) {
   if (reminder.repeatType === 'monthly') {
-    return addOneMonth(reminder.dueDate);
+    return addOneMonth(fromDate);
   }
 
   return addDays(
-    reminder.dueDate,
+    fromDate,
     getRepeatIntervalDays(reminder.repeatType, reminder.customIntervalDays)
   );
+}
+
+export function getDueDateLabel(dueDate: string, today = getTodayDateKey()) {
+  if (dueDate < today) {
+    return `Überfällig seit: ${dueDate}`;
+  }
+
+  if (dueDate === today) {
+    return 'Heute';
+  }
+
+  return dueDate;
 }

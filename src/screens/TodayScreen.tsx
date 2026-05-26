@@ -8,10 +8,10 @@ import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { deleteReminder, getTodayReminders, markReminderCompleted } from '@/database/reminders';
+import { deleteReminder, getDueReminders, markReminderCompleted } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { Reminder } from '@/types/reminder';
-import { getTodayDateKey } from '@/utils/dueDate';
+import { getDueDateLabel, getTodayDateKey } from '@/utils/dueDate';
 
 export default function TodayScreen() {
   const theme = useTheme();
@@ -21,7 +21,7 @@ export default function TodayScreen() {
   const loadReminders = useCallback(async () => {
     try {
       setStatus('loading');
-      const storedReminders = await getTodayReminders(getTodayDateKey());
+      const storedReminders = await getDueReminders(getTodayDateKey());
       setReminders(storedReminders);
       setStatus('ready');
     } catch {
@@ -119,6 +119,7 @@ export default function TodayScreen() {
               <ReminderCard
                 key={reminder.id}
                 reminder={reminder}
+                dueDateLabel={getDueDateLabel(reminder.dueDate)}
                 onComplete={handleCompleteReminder}
                 onDelete={handleDeleteReminder}
                 onOpen={handleOpenReminder}
