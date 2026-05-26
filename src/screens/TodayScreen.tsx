@@ -94,7 +94,7 @@ export default function TodayScreen() {
               pressed && styles.pressed,
             ]}>
             <ThemedText type="smallBold" themeColor="textSecondary">
-              Alle Erinnerungen
+              Erinnerungen
             </ThemedText>
           </Pressable>
         </View>

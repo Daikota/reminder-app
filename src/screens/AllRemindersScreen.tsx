@@ -69,7 +69,7 @@ export default function AllRemindersScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <ThemedText type="subtitle" style={styles.title}>
-            Alle Erinnerungen
+            Erinnerungen
           </ThemedText>
         </View>
 

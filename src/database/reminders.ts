@@ -8,6 +8,7 @@ import type {
   CreateReminderInput,
   Reminder,
   ReminderRepeatType,
+  ReminderWeekday,
   UpdateReminderInput,
 } from '@/types/reminder';
 import { getNextDueDate, getTodayDateKey } from '@/utils/dueDate';
@@ -21,6 +22,7 @@ type ReminderRow = {
   time: string | null;
   repeat_type: string;
   custom_interval_days: number | null;
+  repeat_weekdays: string | null;
   due_date: string;
   notification_id: string | null;
   is_completed: number;
@@ -43,6 +45,43 @@ function isReminderRepeatType(value: string): value is ReminderRepeatType {
   return value === 'daily' || value === 'weekly' || value === 'monthly' || value === 'custom_days';
 }
 
+function isReminderWeekday(value: unknown): value is ReminderWeekday {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 7
+  );
+}
+
+function parseRepeatWeekdays(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsedValue: unknown = JSON.parse(value);
+
+    if (!Array.isArray(parsedValue)) {
+      return null;
+    }
+
+    const weekdays = parsedValue.filter(isReminderWeekday);
+
+    return weekdays.length > 0 ? weekdays : null;
+  } catch {
+    return null;
+  }
+}
+
+function serializeRepeatWeekdays(repeatType: ReminderRepeatType, repeatWeekdays?: ReminderWeekday[] | null) {
+  if (repeatType !== 'weekly' || !repeatWeekdays?.length) {
+    return null;
+  }
+
+  return JSON.stringify(repeatWeekdays);
+}
+
 function mapReminderRow(row: ReminderRow): Reminder {
   return {
     id: row.id,
@@ -51,6 +90,7 @@ function mapReminderRow(row: ReminderRow): Reminder {
     time: row.time,
     repeatType: isReminderRepeatType(row.repeat_type) ? row.repeat_type : 'daily',
     customIntervalDays: row.custom_interval_days,
+    repeatWeekdays: parseRepeatWeekdays(row.repeat_weekdays),
     dueDate: row.due_date,
     notificationId: row.notification_id,
     isCompleted: row.is_completed === 1,
@@ -79,6 +119,7 @@ export function initializeDatabase() {
           time TEXT,
           repeat_type TEXT NOT NULL,
           custom_interval_days INTEGER,
+          repeat_weekdays TEXT,
           due_date TEXT NOT NULL,
           notification_id TEXT,
           is_completed INTEGER NOT NULL,
@@ -90,6 +131,7 @@ export function initializeDatabase() {
       const tableColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(reminders)');
       const hasDueDate = tableColumns.some((column) => column.name === 'due_date');
       const hasNotificationId = tableColumns.some((column) => column.name === 'notification_id');
+      const hasRepeatWeekdays = tableColumns.some((column) => column.name === 'repeat_weekdays');
 
       if (!hasDueDate) {
         await database.execAsync(`ALTER TABLE reminders ADD COLUMN due_date TEXT NOT NULL DEFAULT '${today}'`);
@@ -97,6 +139,10 @@ export function initializeDatabase() {
 
       if (!hasNotificationId) {
         await database.execAsync('ALTER TABLE reminders ADD COLUMN notification_id TEXT');
+      }
+
+      if (!hasRepeatWeekdays) {
+        await database.execAsync('ALTER TABLE reminders ADD COLUMN repeat_weekdays TEXT');
       }
     });
   }
@@ -111,14 +157,16 @@ export async function createReminder(input: CreateReminderInput) {
   const now = new Date().toISOString();
   const title = input.title.trim();
   const description = input.description?.trim() ? input.description.trim() : null;
+  const repeatType = input.repeatType ?? 'daily';
   const reminder: Reminder = {
     id: createReminderId(),
     title,
     description,
     time: input.time ?? null,
-    repeatType: input.repeatType ?? 'daily',
+    repeatType,
     customIntervalDays:
       input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
+    repeatWeekdays: repeatType === 'weekly' ? input.repeatWeekdays ?? null : null,
     dueDate: getTodayDateKey(),
     notificationId: null,
     isCompleted: false,
@@ -134,12 +182,13 @@ export async function createReminder(input: CreateReminderInput) {
       time,
       repeat_type,
       custom_interval_days,
+      repeat_weekdays,
       due_date,
       notification_id,
       is_completed,
       created_at,
       updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       reminder.id,
       reminder.title,
@@ -147,6 +196,7 @@ export async function createReminder(input: CreateReminderInput) {
       reminder.time,
       reminder.repeatType,
       reminder.customIntervalDays,
+      serializeRepeatWeekdays(reminder.repeatType, reminder.repeatWeekdays),
       reminder.dueDate,
       reminder.notificationId,
       reminder.isCompleted ? 1 : 0,
@@ -182,6 +232,7 @@ export async function getReminders() {
       time,
       repeat_type,
       custom_interval_days,
+      repeat_weekdays,
       due_date,
       notification_id,
       is_completed,
@@ -206,6 +257,7 @@ export async function getAllReminders() {
       time,
       repeat_type,
       custom_interval_days,
+      repeat_weekdays,
       due_date,
       notification_id,
       is_completed,
@@ -233,6 +285,7 @@ export async function getTodayReminders(today: string) {
       time,
       repeat_type,
       custom_interval_days,
+      repeat_weekdays,
       due_date,
       notification_id,
       is_completed,
@@ -259,6 +312,7 @@ export async function getDueReminders(today: string) {
       time,
       repeat_type,
       custom_interval_days,
+      repeat_weekdays,
       due_date,
       notification_id,
       is_completed,
@@ -288,6 +342,7 @@ export async function getReminderById(id: string) {
       time,
       repeat_type,
       custom_interval_days,
+      repeat_weekdays,
       due_date,
       notification_id,
       is_completed,
@@ -320,6 +375,7 @@ export async function updateReminder(input: UpdateReminderInput) {
     time: input.time ?? null,
     repeatType: input.repeatType,
     customIntervalDays: input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
+    repeatWeekdays: input.repeatType === 'weekly' ? input.repeatWeekdays ?? null : null,
     notificationId: null,
     updatedAt: now,
   };
@@ -334,6 +390,7 @@ export async function updateReminder(input: UpdateReminderInput) {
         time = ?,
         repeat_type = ?,
         custom_interval_days = ?,
+        repeat_weekdays = ?,
         notification_id = ?,
         updated_at = ?
       WHERE id = ?`,
@@ -343,6 +400,7 @@ export async function updateReminder(input: UpdateReminderInput) {
       input.time ?? null,
       input.repeatType,
       input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
+      serializeRepeatWeekdays(input.repeatType, input.repeatWeekdays),
       notificationId,
       now,
       input.id,
@@ -401,9 +459,25 @@ export async function deleteReminder(id: string) {
   await database.runAsync('DELETE FROM reminders WHERE id = ?', [id]);
 }
 
-export function getRepeatLabel(repeatType: ReminderRepeatType, customIntervalDays?: number | null) {
+const weekdayLabels: Record<ReminderWeekday, string> = {
+  1: 'Mo',
+  2: 'Di',
+  3: 'Mi',
+  4: 'Do',
+  5: 'Fr',
+  6: 'Sa',
+  7: 'So',
+};
+
+export function getRepeatLabel(
+  repeatType: ReminderRepeatType,
+  customIntervalDays?: number | null,
+  repeatWeekdays?: ReminderWeekday[] | null
+) {
   if (repeatType === 'weekly') {
-    return 'Wöchentlich';
+    return repeatWeekdays?.length
+      ? `Wöchentlich · ${repeatWeekdays.map((weekday) => weekdayLabels[weekday]).join(', ')}`
+      : 'Wöchentlich';
   }
 
   if (repeatType === 'monthly') {

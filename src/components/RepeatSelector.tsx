@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    gap: Spacing.three,
+    paddingVertical: Spacing.two,
+    gap: Spacing.two,
   },
   options: {
     flexDirection: 'row',

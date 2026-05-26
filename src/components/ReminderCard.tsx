@@ -1,3 +1,4 @@
+import { SymbolView } from 'expo-symbols';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -68,7 +69,11 @@ function ReminderCardComponent({
           ) : null}
           <ThemedView type="surfaceMuted" style={[styles.metaPill, { borderColor: theme.border }]}>
             <ThemedText type="smallBold" themeColor="textSecondary">
-              {getRepeatLabel(reminder.repeatType, reminder.customIntervalDays)}
+              {getRepeatLabel(
+                reminder.repeatType,
+                reminder.customIntervalDays,
+                reminder.repeatWeekdays
+              )}
             </ThemedText>
           </ThemedView>
         </View>
@@ -78,6 +83,7 @@ function ReminderCardComponent({
         {onComplete ? (
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel="Erinnerung erledigen"
             disabled={reminder.isCompleted}
             onPress={() => onComplete(reminder.id)}
             style={({ pressed }) => [
@@ -86,23 +92,30 @@ function ReminderCardComponent({
               pressed && styles.pressed,
               reminder.isCompleted && styles.disabledAction,
             ]}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Erledigt
-            </ThemedText>
+            <SymbolView
+              name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+              size={18}
+              weight="bold"
+              tintColor={theme.textSecondary}
+            />
           </Pressable>
         ) : null}
 
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Erinnerung löschen"
           onPress={() => onDelete(reminder.id)}
           style={({ pressed }) => [
             styles.actionButton,
             { borderColor: theme.border },
             pressed && styles.pressed,
           ]}>
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            Löschen
-          </ThemedText>
+          <SymbolView
+            name={{ ios: 'trash', android: 'delete', web: 'delete' }}
+            size={18}
+            weight="regular"
+            tintColor={theme.textSecondary}
+          />
         </Pressable>
       </View>
     </ThemedView>
@@ -117,6 +130,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    paddingRight: 76,
     gap: Spacing.three,
   },
   contentPressable: {
@@ -159,19 +173,18 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
   },
   actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    position: 'absolute',
+    right: Spacing.three,
+    top: Spacing.three,
     gap: Spacing.two,
   },
   actionButton: {
+    width: 44,
     minHeight: 44,
-    minWidth: 112,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
-    flexGrow: 1,
   },
   pressed: {
     opacity: 0.72,

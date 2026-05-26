@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { RepeatSelector } from '@/components/RepeatSelector';
@@ -8,55 +8,84 @@ import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { TimeInput } from '@/components/TimeInput';
+import { WeekdaySelector } from '@/components/WeekdaySelector';
 import { Spacing } from '@/constants/theme';
 import { createReminder } from '@/database/reminders';
-import type { ReminderRepeatType } from '@/types/reminder';
-import { normalizeOptionalTime, parseCustomIntervalDays } from '@/utils/reminderValidation';
+import type { ReminderRepeatType, ReminderWeekday } from '@/types/reminder';
+import { getTodayWeekday } from '@/utils/dueDate';
+import {
+  normalizeOptionalTime,
+  normalizeRepeatWeekdays,
+  parseCustomIntervalDays,
+} from '@/utils/reminderValidation';
+
+type FormErrors = {
+  title?: string;
+  time?: string;
+  customIntervalDays?: string;
+  repeatWeekdays?: string;
+  form?: string;
+};
 
 export default function CreateReminderScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [isNoteVisible, setIsNoteVisible] = useState(false);
   const [time, setTime] = useState('');
   const [repeatType, setRepeatType] = useState<ReminderRepeatType>('daily');
+  const [repeatWeekdays, setRepeatWeekdays] = useState<ReminderWeekday[]>([getTodayWeekday()]);
   const [customIntervalDays, setCustomIntervalDays] = useState('');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
+
+  function clearError(errorKey: keyof FormErrors) {
+    if (errors[errorKey]) {
+      setErrors((currentErrors) => ({ ...currentErrors, [errorKey]: undefined, form: undefined }));
+    }
+  }
 
   async function handleSave() {
     const normalizedTitle = title.trim();
+    const normalizedTime = normalizeOptionalTime(time);
+    const parsedCustomIntervalDays = parseCustomIntervalDays(customIntervalDays, repeatType);
+    const normalizedWeekdays = normalizeRepeatWeekdays(repeatType, repeatWeekdays);
+    const nextErrors: FormErrors = {};
 
     if (!normalizedTitle) {
-      setErrorMessage('Bitte gib einen Titel ein.');
-      return;
+      nextErrors.title = 'Titel fehlt.';
     }
-
-    const normalizedTime = normalizeOptionalTime(time);
 
     if (normalizedTime === undefined) {
-      setErrorMessage('Uhrzeit bitte als HH:mm eingeben.');
-      return;
+      nextErrors.time = 'Bitte als 17, 1730 oder 17:30 eingeben.';
     }
 
-    const parsedCustomIntervalDays = parseCustomIntervalDays(customIntervalDays, repeatType);
-
     if (parsedCustomIntervalDays === undefined) {
-      setErrorMessage('Intervall muss mindestens 1 Tag sein.');
+      nextErrors.customIntervalDays = 'Mindestens 1 Tag.';
+    }
+
+    if (normalizedWeekdays === undefined) {
+      nextErrors.repeatWeekdays = 'Bitte mindestens einen Tag wählen.';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
 
     try {
       setIsSaving(true);
-      setErrorMessage(null);
+      setErrors({});
       await createReminder({
         title: normalizedTitle,
         description,
         time: normalizedTime,
         repeatType,
         customIntervalDays: parsedCustomIntervalDays,
+        repeatWeekdays: normalizedWeekdays,
       });
       router.replace('/');
     } catch {
-      setErrorMessage('Speichern ist fehlgeschlagen.');
+      setErrors({ form: 'Speichern ist fehlgeschlagen.' });
     } finally {
       setIsSaving(false);
     }
@@ -79,63 +108,89 @@ export default function CreateReminderScreen() {
         <View style={styles.form}>
           <TextField
             label="Titel"
-            placeholder="Titel"
+            placeholder="z. B. Wasser trinken"
             returnKeyType="next"
             value={title}
+            error={errors.title}
             onChangeText={(value) => {
               setTitle(value);
-              if (errorMessage) {
-                setErrorMessage(null);
-              }
+              clearError('title');
             }}
           />
-          <TextField
-            label="Beschreibung"
-            placeholder="Beschreibung"
-            multiline
-            numberOfLines={4}
-            value={description}
-            onChangeText={setDescription}
-            style={styles.descriptionInput}
-          />
+
+          {isNoteVisible ? (
+            <TextField
+              label="Notiz"
+              placeholder="Optionaler Hinweis"
+              multiline
+              numberOfLines={3}
+              value={description}
+              onChangeText={setDescription}
+              style={styles.descriptionInput}
+            />
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setIsNoteVisible(true)}
+              style={({ pressed }) => [styles.noteButton, pressed && styles.pressed]}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Notiz hinzufügen
+              </ThemedText>
+            </Pressable>
+          )}
+
           <TimeInput
             value={time}
+            error={errors.time}
             onChangeText={(value) => {
               setTime(value);
-              if (errorMessage) {
-                setErrorMessage(null);
-              }
+              clearError('time');
             }}
           />
           <RepeatSelector
             value={repeatType}
             onChange={(value) => {
               setRepeatType(value);
+              if (value === 'weekly' && repeatWeekdays.length === 0) {
+                setRepeatWeekdays([getTodayWeekday()]);
+              }
               if (value !== 'custom_days') {
                 setCustomIntervalDays('');
               }
-              if (errorMessage) {
-                setErrorMessage(null);
-              }
+              setErrors((currentErrors) => ({
+                ...currentErrors,
+                customIntervalDays: undefined,
+                repeatWeekdays: undefined,
+                form: undefined,
+              }));
             }}
           />
-          {repeatType === 'custom_days' ? (
-            <TextField
-              label="Tage"
-              placeholder="7"
-              keyboardType="number-pad"
-              value={customIntervalDays}
-              onChangeText={(value) => {
-                setCustomIntervalDays(value);
-                if (errorMessage) {
-                  setErrorMessage(null);
-                }
+          {repeatType === 'weekly' ? (
+            <WeekdaySelector
+              value={repeatWeekdays}
+              error={errors.repeatWeekdays}
+              onChange={(value) => {
+                setRepeatWeekdays(value);
+                clearError('repeatWeekdays');
               }}
             />
           ) : null}
-          {errorMessage ? (
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.errorText}>
-              {errorMessage}
+          {repeatType === 'custom_days' ? (
+            <TextField
+              label="Intervall"
+              placeholder="z. B. 7"
+              keyboardType="number-pad"
+              value={customIntervalDays}
+              error={errors.customIntervalDays}
+              onChangeText={(value) => {
+                setCustomIntervalDays(value);
+                clearError('customIntervalDays');
+              }}
+            />
+          ) : null}
+          {errors.form ? (
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.formError}>
+              {errors.form}
             </ThemedText>
           ) : null}
         </View>
@@ -156,12 +211,20 @@ const styles = StyleSheet.create({
     lineHeight: 38,
   },
   form: {
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
   descriptionInput: {
-    minHeight: 96,
+    minHeight: 82,
   },
-  errorText: {
+  noteButton: {
+    minHeight: 44,
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+  },
+  pressed: {
+    opacity: 0.72,
+  },
+  formError: {
     paddingHorizontal: Spacing.one,
   },
 });

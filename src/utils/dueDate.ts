@@ -1,4 +1,4 @@
-import type { Reminder, ReminderRepeatType } from '@/types/reminder';
+import type { Reminder, ReminderRepeatType, ReminderWeekday } from '@/types/reminder';
 
 function padDatePart(value: number) {
   return value.toString().padStart(2, '0');
@@ -10,6 +10,16 @@ export function formatDateKey(date: Date) {
 
 export function getTodayDateKey() {
   return formatDateKey(new Date());
+}
+
+export function getWeekdayFromDate(date: Date): ReminderWeekday {
+  const weekday = date.getDay();
+
+  return (weekday === 0 ? 7 : weekday) as ReminderWeekday;
+}
+
+export function getTodayWeekday() {
+  return getWeekdayFromDate(new Date());
 }
 
 function parseDateKey(dateKey: string) {
@@ -37,6 +47,23 @@ function addOneMonth(dateKey: string) {
   );
 }
 
+function getNextSelectedWeekdayDate(dateKey: string, weekdays: ReminderWeekday[]) {
+  if (weekdays.length === 0) {
+    return addDays(dateKey, 7);
+  }
+
+  for (let offset = 1; offset <= 7; offset += 1) {
+    const candidate = parseDateKey(dateKey);
+    candidate.setDate(candidate.getDate() + offset);
+
+    if (weekdays.includes(getWeekdayFromDate(candidate))) {
+      return formatDateKey(candidate);
+    }
+  }
+
+  return addDays(dateKey, 7);
+}
+
 function getRepeatIntervalDays(repeatType: ReminderRepeatType, customIntervalDays: number | null) {
   if (repeatType === 'weekly') {
     return 7;
@@ -50,9 +77,13 @@ function getRepeatIntervalDays(repeatType: ReminderRepeatType, customIntervalDay
 }
 
 export function getNextDueDate(
-  reminder: Pick<Reminder, 'dueDate' | 'repeatType' | 'customIntervalDays'>,
+  reminder: Pick<Reminder, 'dueDate' | 'repeatType' | 'customIntervalDays' | 'repeatWeekdays'>,
   fromDate = reminder.dueDate
 ) {
+  if (reminder.repeatType === 'weekly' && reminder.repeatWeekdays?.length) {
+    return getNextSelectedWeekdayDate(fromDate, reminder.repeatWeekdays);
+  }
+
   if (reminder.repeatType === 'monthly') {
     return addOneMonth(fromDate);
   }

@@ -1,4 +1,5 @@
 export type ReminderRepeatType = 'daily' | 'weekly' | 'monthly' | 'custom_days';
+export type ReminderWeekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export type Reminder = {
   id: string;
@@ -7,6 +8,7 @@ export type Reminder = {
   time: string | null;
   repeatType: ReminderRepeatType;
   customIntervalDays: number | null;
+  repeatWeekdays: ReminderWeekday[] | null;
   dueDate: string;
   notificationId: string | null;
   isCompleted: boolean;
@@ -20,6 +22,7 @@ export type CreateReminderInput = {
   time?: string | null;
   repeatType?: ReminderRepeatType;
   customIntervalDays?: number | null;
+  repeatWeekdays?: ReminderWeekday[] | null;
 };
 
 export type UpdateReminderInput = {
@@ -29,4 +32,5 @@ export type UpdateReminderInput = {
   time?: string | null;
   repeatType: ReminderRepeatType;
   customIntervalDays?: number | null;
+  repeatWeekdays?: ReminderWeekday[] | null;
 };
