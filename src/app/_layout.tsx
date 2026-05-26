@@ -1,15 +1,102 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { StyleSheet, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Colors } from '@/constants/theme';
+import { initializeDatabase } from '@/database/reminders';
 
-export default function TabLayout() {
+const navigationThemes = {
+  light: {
+    ...DefaultTheme,
+    dark: false,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: Colors.light.accent,
+      background: Colors.light.background,
+      card: Colors.light.background,
+      text: Colors.light.text,
+      border: Colors.light.border,
+      notification: Colors.light.accent,
+    },
+  },
+  dark: {
+    ...DarkTheme,
+    dark: true,
+    colors: {
+      ...DarkTheme.colors,
+      primary: Colors.dark.accent,
+      background: Colors.dark.background,
+      card: Colors.dark.background,
+      text: Colors.dark.text,
+      border: Colors.dark.border,
+      notification: Colors.dark.accent,
+    },
+  },
+} as const;
+
+export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const [databaseStatus, setDatabaseStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    initializeDatabase()
+      .then(() => {
+        if (isMounted) {
+          setDatabaseStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDatabaseStatus('error');
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navigationThemes[scheme]}>
       <AnimatedSplashOverlay />
-      <AppTabs />
+      {databaseStatus === 'ready' ? (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: Colors[scheme].background },
+          }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="create-reminder" />
+        </Stack>
+      ) : (
+        <ThemedView style={styles.statusContainer}>
+          <SafeAreaView style={styles.statusSafeArea}>
+            <ThemedText type="smallBold">
+              {databaseStatus === 'error'
+                ? 'Erinnerungen konnten nicht geladen werden.'
+                : 'Erinnerungen werden vorbereitet.'}
+            </ThemedText>
+          </SafeAreaView>
+        </ThemedView>
+      )}
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  statusContainer: {
+    flex: 1,
+  },
+  statusSafeArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

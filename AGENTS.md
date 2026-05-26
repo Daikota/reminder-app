@@ -1,6 +1,6 @@
 # Expo HAS CHANGED
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any code.
+Read the exact versioned Expo docs for the SDK version used by this project before writing any code. `package.json` is the source of truth for the active Expo SDK and related Expo package versions. For the current Expo 56 project, use https://docs.expo.dev/versions/v56.0.0/.
 
 ## Mobile UX, UI, and App Design Rules
 
