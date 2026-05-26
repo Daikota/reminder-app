@@ -138,10 +138,30 @@ export async function getReminders() {
       created_at,
       updated_at
     FROM reminders
-    ORDER BY created_at DESC`
+    ORDER BY is_completed ASC, created_at DESC`
   );
 
   return rows.map(mapReminderRow);
+}
+
+export async function markReminderCompleted(id: string) {
+  await initializeDatabase();
+
+  const database = await getDatabase();
+  const now = new Date().toISOString();
+
+  await database.runAsync(
+    'UPDATE reminders SET is_completed = 1, updated_at = ? WHERE id = ?',
+    [now, id]
+  );
+}
+
+export async function deleteReminder(id: string) {
+  await initializeDatabase();
+
+  const database = await getDatabase();
+
+  await database.runAsync('DELETE FROM reminders WHERE id = ?', [id]);
 }
 
 export function getRepeatLabel(repeatType: ReminderRepeatType) {

@@ -1,13 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { ReminderCard } from '@/components/ReminderCard';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { getReminders, getRepeatLabel } from '@/database/reminders';
+import { deleteReminder, getReminders, markReminderCompleted } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { Reminder } from '@/types/reminder';
 
@@ -31,6 +32,41 @@ export default function TodayScreen() {
     useCallback(() => {
       void loadReminders();
     }, [loadReminders])
+  );
+
+  const handleCompleteReminder = useCallback(
+    async (id: string) => {
+      try {
+        await markReminderCompleted(id);
+        await loadReminders();
+      } catch {
+        setStatus('error');
+      }
+    },
+    [loadReminders]
+  );
+
+  const handleDeleteReminder = useCallback(
+    (id: string) => {
+      Alert.alert('Erinnerung löschen?', 'Diese Erinnerung wird dauerhaft entfernt.', [
+        {
+          text: 'Abbrechen',
+          style: 'cancel',
+        },
+        {
+          text: 'Löschen',
+          style: 'destructive',
+          onPress: () => {
+            void deleteReminder(id)
+              .then(loadReminders)
+              .catch(() => {
+                setStatus('error');
+              });
+          },
+        },
+      ]);
+    },
+    [loadReminders]
   );
 
   return (
@@ -64,20 +100,12 @@ export default function TodayScreen() {
         {status === 'ready' && reminders.length > 0 ? (
           <View style={styles.reminderList}>
             {reminders.map((reminder) => (
-              <ThemedView
+              <ReminderCard
                 key={reminder.id}
-                type="surface"
-                style={[styles.reminderCard, { borderColor: theme.border }]}>
-                <ThemedText style={styles.reminderTitle}>{reminder.title}</ThemedText>
-                {reminder.description ? (
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.reminderDescription}>
-                    {reminder.description}
-                  </ThemedText>
-                ) : null}
-                <ThemedText type="smallBold" themeColor="textSecondary">
-                  {getRepeatLabel(reminder.repeatType)}
-                </ThemedText>
-              </ThemedView>
+                reminder={reminder}
+                onComplete={handleCompleteReminder}
+                onDelete={handleDeleteReminder}
+              />
             ))}
           </View>
         ) : null}
@@ -110,20 +138,5 @@ const styles = StyleSheet.create({
   },
   reminderList: {
     gap: Spacing.three,
-  },
-  reminderCard: {
-    borderWidth: 1,
-    borderRadius: 24,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-    gap: Spacing.two,
-  },
-  reminderTitle: {
-    fontSize: 18,
-    lineHeight: 25,
-    fontWeight: 700,
-  },
-  reminderDescription: {
-    fontWeight: 500,
   },
 });
