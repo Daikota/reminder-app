@@ -1,5 +1,9 @@
 import * as SQLite from 'expo-sqlite';
 
+import {
+  cancelReminderNotification,
+  scheduleReminderNotification,
+} from '@/services/notificationService';
 import type {
   CreateReminderInput,
   Reminder,
@@ -18,6 +22,7 @@ type ReminderRow = {
   repeat_type: string;
   custom_interval_days: number | null;
   due_date: string;
+  notification_id: string | null;
   is_completed: number;
   created_at: string;
   updated_at: string;
@@ -47,6 +52,7 @@ function mapReminderRow(row: ReminderRow): Reminder {
     repeatType: isReminderRepeatType(row.repeat_type) ? row.repeat_type : 'daily',
     customIntervalDays: row.custom_interval_days,
     dueDate: row.due_date,
+    notificationId: row.notification_id,
     isCompleted: row.is_completed === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -74,6 +80,7 @@ export function initializeDatabase() {
           repeat_type TEXT NOT NULL,
           custom_interval_days INTEGER,
           due_date TEXT NOT NULL,
+          notification_id TEXT,
           is_completed INTEGER NOT NULL,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
@@ -82,9 +89,14 @@ export function initializeDatabase() {
 
       const tableColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(reminders)');
       const hasDueDate = tableColumns.some((column) => column.name === 'due_date');
+      const hasNotificationId = tableColumns.some((column) => column.name === 'notification_id');
 
       if (!hasDueDate) {
         await database.execAsync(`ALTER TABLE reminders ADD COLUMN due_date TEXT NOT NULL DEFAULT '${today}'`);
+      }
+
+      if (!hasNotificationId) {
+        await database.execAsync('ALTER TABLE reminders ADD COLUMN notification_id TEXT');
       }
     });
   }
@@ -108,6 +120,7 @@ export async function createReminder(input: CreateReminderInput) {
     customIntervalDays:
       input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
     dueDate: getTodayDateKey(),
+    notificationId: null,
     isCompleted: false,
     createdAt: now,
     updatedAt: now,
@@ -122,10 +135,11 @@ export async function createReminder(input: CreateReminderInput) {
       repeat_type,
       custom_interval_days,
       due_date,
+      notification_id,
       is_completed,
       created_at,
       updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       reminder.id,
       reminder.title,
@@ -134,13 +148,26 @@ export async function createReminder(input: CreateReminderInput) {
       reminder.repeatType,
       reminder.customIntervalDays,
       reminder.dueDate,
+      reminder.notificationId,
       reminder.isCompleted ? 1 : 0,
       reminder.createdAt,
       reminder.updatedAt,
     ]
   );
 
-  return reminder;
+  const notificationId = await scheduleReminderNotification(reminder);
+
+  if (notificationId) {
+    await database.runAsync('UPDATE reminders SET notification_id = ? WHERE id = ?', [
+      notificationId,
+      reminder.id,
+    ]);
+  }
+
+  return {
+    ...reminder,
+    notificationId,
+  };
 }
 
 export async function getReminders() {
@@ -156,6 +183,7 @@ export async function getReminders() {
       repeat_type,
       custom_interval_days,
       due_date,
+      notification_id,
       is_completed,
       created_at,
       updated_at
@@ -179,6 +207,7 @@ export async function getTodayReminders(today: string) {
       repeat_type,
       custom_interval_days,
       due_date,
+      notification_id,
       is_completed,
       created_at,
       updated_at
@@ -204,6 +233,7 @@ export async function getReminderById(id: string) {
       repeat_type,
       custom_interval_days,
       due_date,
+      notification_id,
       is_completed,
       created_at,
       updated_at
@@ -219,8 +249,27 @@ export async function updateReminder(input: UpdateReminderInput) {
   await initializeDatabase();
 
   const database = await getDatabase();
+  const existingReminder = await getReminderById(input.id);
+
+  if (!existingReminder) {
+    return;
+  }
+
   const now = new Date().toISOString();
   const description = input.description?.trim() ? input.description.trim() : null;
+  const updatedReminder: Reminder = {
+    ...existingReminder,
+    title: input.title.trim(),
+    description,
+    time: input.time ?? null,
+    repeatType: input.repeatType,
+    customIntervalDays: input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
+    notificationId: null,
+    updatedAt: now,
+  };
+
+  await cancelReminderNotification(existingReminder.notificationId);
+  const notificationId = await scheduleReminderNotification(updatedReminder);
 
   await database.runAsync(
     `UPDATE reminders
@@ -229,6 +278,7 @@ export async function updateReminder(input: UpdateReminderInput) {
         time = ?,
         repeat_type = ?,
         custom_interval_days = ?,
+        notification_id = ?,
         updated_at = ?
       WHERE id = ?`,
     [
@@ -237,6 +287,7 @@ export async function updateReminder(input: UpdateReminderInput) {
       input.time ?? null,
       input.repeatType,
       input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
+      notificationId,
       now,
       input.id,
     ]
@@ -267,10 +318,19 @@ export async function markReminderCompleted(id: string) {
   const database = await getDatabase();
   const now = new Date().toISOString();
   const nextDueDate = getNextDueDate(reminder);
+  const nextReminder: Reminder = {
+    ...reminder,
+    dueDate: nextDueDate,
+    notificationId: null,
+    updatedAt: now,
+  };
+
+  await cancelReminderNotification(reminder.notificationId);
+  const notificationId = await scheduleReminderNotification(nextReminder);
 
   await database.runAsync(
-    'UPDATE reminders SET due_date = ?, is_completed = 0, updated_at = ? WHERE id = ?',
-    [nextDueDate, now, id]
+    'UPDATE reminders SET due_date = ?, notification_id = ?, is_completed = 0, updated_at = ? WHERE id = ?',
+    [nextDueDate, notificationId, now, id]
   );
 }
 
@@ -278,6 +338,9 @@ export async function deleteReminder(id: string) {
   await initializeDatabase();
 
   const database = await getDatabase();
+  const reminder = await getReminderById(id);
+
+  await cancelReminderNotification(reminder?.notificationId ?? null);
 
   await database.runAsync('DELETE FROM reminders WHERE id = ?', [id]);
 }
