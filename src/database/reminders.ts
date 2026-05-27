@@ -11,7 +11,11 @@ import type {
   ReminderWeekday,
   UpdateReminderInput,
 } from '@/types/reminder';
-import { getNextDueDate, getTodayDateKey } from '@/utils/dueDate';
+import {
+  calculateInitialDueDate,
+  calculateNextDueDateFromToday,
+  getTodayDateKey,
+} from '@/utils/dueDate';
 
 const DATABASE_NAME = 'reminder-app.db';
 
@@ -158,16 +162,24 @@ export async function createReminder(input: CreateReminderInput) {
   const title = input.title.trim();
   const description = input.description?.trim() ? input.description.trim() : null;
   const repeatType = input.repeatType ?? 'daily';
+  const time = input.time ?? null;
+  const customIntervalDays =
+    repeatType === 'custom_days' ? input.customIntervalDays ?? null : null;
+  const repeatWeekdays = repeatType === 'weekly' ? input.repeatWeekdays ?? null : null;
   const reminder: Reminder = {
     id: createReminderId(),
     title,
     description,
-    time: input.time ?? null,
+    time,
     repeatType,
-    customIntervalDays:
-      input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
-    repeatWeekdays: repeatType === 'weekly' ? input.repeatWeekdays ?? null : null,
-    dueDate: getTodayDateKey(),
+    customIntervalDays,
+    repeatWeekdays,
+    dueDate: calculateInitialDueDate({
+      repeatType,
+      customIntervalDays,
+      repeatWeekdays,
+      time,
+    }),
     notificationId: null,
     isCompleted: false,
     createdAt: now,
@@ -368,14 +380,25 @@ export async function updateReminder(input: UpdateReminderInput) {
 
   const now = new Date().toISOString();
   const description = input.description?.trim() ? input.description.trim() : null;
+  const time = input.time ?? null;
+  const customIntervalDays =
+    input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null;
+  const repeatWeekdays = input.repeatType === 'weekly' ? input.repeatWeekdays ?? null : null;
+  const dueDate = calculateInitialDueDate({
+    repeatType: input.repeatType,
+    customIntervalDays,
+    repeatWeekdays,
+    time,
+  });
   const updatedReminder: Reminder = {
     ...existingReminder,
     title: input.title.trim(),
     description,
-    time: input.time ?? null,
+    time,
     repeatType: input.repeatType,
-    customIntervalDays: input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
-    repeatWeekdays: input.repeatType === 'weekly' ? input.repeatWeekdays ?? null : null,
+    customIntervalDays,
+    repeatWeekdays,
+    dueDate,
     notificationId: null,
     updatedAt: now,
   };
@@ -391,16 +414,18 @@ export async function updateReminder(input: UpdateReminderInput) {
         repeat_type = ?,
         custom_interval_days = ?,
         repeat_weekdays = ?,
+        due_date = ?,
         notification_id = ?,
         updated_at = ?
       WHERE id = ?`,
     [
       input.title.trim(),
       description,
-      input.time ?? null,
+      time,
       input.repeatType,
-      input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null,
-      serializeRepeatWeekdays(input.repeatType, input.repeatWeekdays),
+      customIntervalDays,
+      serializeRepeatWeekdays(input.repeatType, repeatWeekdays),
+      dueDate,
       notificationId,
       now,
       input.id,
@@ -431,7 +456,7 @@ export async function markReminderCompleted(id: string) {
 
   const database = await getDatabase();
   const now = new Date().toISOString();
-  const nextDueDate = getNextDueDate(reminder, getTodayDateKey());
+  const nextDueDate = calculateNextDueDateFromToday(reminder);
   const nextReminder: Reminder = {
     ...reminder,
     dueDate: nextDueDate,
