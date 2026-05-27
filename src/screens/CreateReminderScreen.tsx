@@ -85,7 +85,7 @@ export default function CreateReminderScreen() {
         customIntervalDays: parsedCustomIntervalDays,
         repeatWeekdays: normalizedWeekdays,
       });
-      router.replace('/');
+      router.replace('/reminders');
     } catch {
       setErrors({ form: 'Speichern ist fehlgeschlagen.' });
     } finally {

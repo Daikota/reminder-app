@@ -94,21 +94,32 @@ export default function TodayScreen() {
           </ThemedText>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/reminders/index')}
+            onPress={() => router.push('/reminders')}
             style={({ pressed }) => [
               styles.secondaryLink,
               { backgroundColor: theme.backgroundElement, borderColor: theme.border },
               pressed && styles.pressed,
             ]}>
+            <View style={styles.secondaryIcon}>
+              <SymbolView
+                name={{ ios: 'list.bullet', android: 'list', web: 'list' }}
+                size={17}
+                weight="regular"
+                tintColor={theme.textSecondary}
+              />
+            </View>
+            <View style={styles.secondaryCopy}>
+              <ThemedText style={styles.secondaryTitle}>Erinnerungen</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Heute, später, überfällig
+              </ThemedText>
+            </View>
             <SymbolView
-              name={{ ios: 'list.bullet', android: 'list', web: 'list' }}
+              name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
               size={16}
-              weight="regular"
+              weight="bold"
               tintColor={theme.textSecondary}
             />
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Erinnerungen
-            </ThemedText>
           </Pressable>
         </View>
 
@@ -206,15 +217,30 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   secondaryLink: {
-    minHeight: 44,
+    minHeight: 62,
     borderWidth: 1,
-    borderRadius: 999,
-    alignSelf: 'flex-start',
+    borderRadius: 24,
     paddingHorizontal: Spacing.three,
+    paddingVertical: 9,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.three,
+  },
+  secondaryIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  secondaryCopy: {
+    flex: 1,
+    gap: 1,
+  },
+  secondaryTitle: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: 700,
   },
   pressed: {
     opacity: 0.72,

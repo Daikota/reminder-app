@@ -135,11 +135,7 @@ export default function EditReminderScreen() {
         customIntervalDays: parsedCustomIntervalDays,
         repeatWeekdays: normalizedWeekdays,
       });
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/');
-      }
+      router.replace('/reminders');
     } catch {
       setErrors({ form: 'Speichern ist fehlgeschlagen.' });
     } finally {
