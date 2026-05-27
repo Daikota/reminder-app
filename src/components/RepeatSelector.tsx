@@ -22,7 +22,7 @@ export function RepeatSelector({ value, onChange }: RepeatSelectorProps) {
   const theme = useTheme();
 
   return (
-    <ThemedView type="surfaceMuted" style={[styles.container, { borderColor: theme.border }]}>
+    <ThemedView type="backgroundElement" style={[styles.container, { borderColor: theme.border }]}>
       <ThemedText type="smallBold" themeColor="textSecondary">
         Wiederholung
       </ThemedText>
@@ -38,7 +38,7 @@ export function RepeatSelector({ value, onChange }: RepeatSelectorProps) {
               style={({ pressed }) => [
                 styles.option,
                 {
-                  backgroundColor: isSelected ? theme.accent : theme.backgroundElement,
+                  backgroundColor: isSelected ? theme.accent : theme.surfaceMuted,
                   borderColor: isSelected ? theme.accent : theme.border,
                   opacity: pressed ? 0.78 : 1,
                 },
@@ -60,10 +60,10 @@ export function RepeatSelector({ value, onChange }: RepeatSelectorProps) {
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 22,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    gap: Spacing.three,
   },
   options: {
     flexDirection: 'row',
@@ -76,11 +76,11 @@ const styles = StyleSheet.create({
     minHeight: 44,
     minWidth: 112,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingVertical: 10,
   },
   optionLabel: {
     lineHeight: 18,

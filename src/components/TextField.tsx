@@ -15,7 +15,7 @@ export function TextField({ label, error, style, placeholderTextColor, ...props 
 
   return (
     <ThemedView
-      type="surfaceMuted"
+      type="backgroundElement"
       style={[styles.container, { borderColor: error ? theme.accent : theme.border }]}>
       <ThemedText type="smallBold" themeColor="textSecondary">
         {label}
@@ -38,16 +38,16 @@ export function TextField({ label, error, style, placeholderTextColor, ...props 
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 22,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    gap: Spacing.two,
+    paddingVertical: 12,
+    gap: Spacing.one,
   },
   input: {
-    minHeight: 32,
+    minHeight: 30,
     fontSize: 17,
     lineHeight: 23,
-    fontWeight: 500,
+    fontWeight: 600,
     padding: 0,
     textAlignVertical: 'top',
   },

@@ -88,7 +88,7 @@ function ReminderCardComponent({
             onPress={() => onComplete(reminder.id)}
             style={({ pressed }) => [
               styles.actionButton,
-              { borderColor: theme.border },
+              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
               pressed && styles.pressed,
               reminder.isCompleted && styles.disabledAction,
             ]}>
@@ -107,7 +107,7 @@ function ReminderCardComponent({
           onPress={() => onDelete(reminder.id)}
           style={({ pressed }) => [
             styles.actionButton,
-            { borderColor: theme.border },
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
             pressed && styles.pressed,
           ]}>
           <SymbolView
@@ -127,10 +127,10 @@ export const ReminderCard = memo(ReminderCardComponent);
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 24,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    paddingRight: 76,
+    borderRadius: 28,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    paddingRight: 78,
     gap: Spacing.three,
   },
   contentPressable: {
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 19,
     lineHeight: 25,
     fontWeight: 700,
   },
@@ -169,8 +169,8 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   actions: {
     position: 'absolute',

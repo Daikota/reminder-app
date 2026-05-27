@@ -36,7 +36,7 @@ export function WeekdaySelector({ value, error, onChange }: WeekdaySelectorProps
 
   return (
     <ThemedView
-      type="surfaceMuted"
+      type="backgroundElement"
       style={[styles.container, { borderColor: error ? theme.accent : theme.border }]}>
       <ThemedText type="smallBold" themeColor="textSecondary">
         Wochentage
@@ -54,7 +54,7 @@ export function WeekdaySelector({ value, error, onChange }: WeekdaySelectorProps
               style={({ pressed }) => [
                 styles.option,
                 {
-                  backgroundColor: isSelected ? theme.accent : theme.backgroundElement,
+                  backgroundColor: isSelected ? theme.accent : theme.surfaceMuted,
                   borderColor: isSelected ? theme.accent : theme.border,
                   opacity: pressed ? 0.78 : 1,
                 },
@@ -80,10 +80,10 @@ export function WeekdaySelector({ value, error, onChange }: WeekdaySelectorProps
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 22,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    gap: Spacing.three,
   },
   options: {
     flexDirection: 'row',
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     width: 44,
     minHeight: 44,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },

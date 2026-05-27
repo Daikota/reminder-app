@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 type ScreenScaffoldProps = {
   children: ReactNode;
@@ -11,6 +12,8 @@ type ScreenScaffoldProps = {
 };
 
 export function ScreenScaffold({ children, footer }: ScreenScaffoldProps) {
+  const theme = useTheme();
+
   return (
     <ThemedView style={styles.container}>
       <KeyboardAvoidingView
@@ -18,7 +21,15 @@ export function ScreenScaffold({ children, footer }: ScreenScaffoldProps) {
         style={styles.keyboardAvoidingView}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.content}>{children}</View>
-          {footer ? <View style={styles.footer}>{footer}</View> : null}
+          {footer ? (
+            <View
+              style={[
+                styles.footer,
+                { backgroundColor: theme.background, borderColor: theme.border },
+              ]}>
+              {footer}
+            </View>
+          ) : null}
         </SafeAreaView>
       </KeyboardAvoidingView>
     </ThemedView>
@@ -42,7 +53,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
+    paddingTop: Spacing.three,
     paddingBottom: Spacing.four,
+    borderTopWidth: 1,
   },
 });

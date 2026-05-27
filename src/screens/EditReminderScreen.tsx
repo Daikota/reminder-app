@@ -11,6 +11,7 @@ import { TimeInput } from '@/components/TimeInput';
 import { WeekdaySelector } from '@/components/WeekdaySelector';
 import { Spacing } from '@/constants/theme';
 import { getReminderById, updateReminder } from '@/database/reminders';
+import { useTheme } from '@/hooks/use-theme';
 import type { Reminder, ReminderRepeatType, ReminderWeekday } from '@/types/reminder';
 import { getTodayWeekday } from '@/utils/dueDate';
 import {
@@ -28,6 +29,7 @@ type FormErrors = {
 };
 
 export default function EditReminderScreen() {
+  const theme = useTheme();
   const params = useLocalSearchParams<{ id?: string }>();
   const reminderId = typeof params.id === 'string' ? params.id : null;
   const [reminder, setReminder] = useState<Reminder | null>(null);
@@ -151,6 +153,7 @@ export default function EditReminderScreen() {
         status === 'ready' ? (
           <PrimaryButton
             label={isSaving ? 'Speichert...' : 'Speichern'}
+            iconName={{ ios: 'checkmark', android: 'check', web: 'check' }}
             disabled={isSaving}
             onPress={handleSave}
           />
@@ -181,6 +184,9 @@ export default function EditReminderScreen() {
 
         {status === 'ready' && reminder ? (
           <View style={styles.form}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+              Details
+            </ThemedText>
             <TextField
               label="Titel"
               placeholder="z. B. Wasser trinken"
@@ -207,7 +213,11 @@ export default function EditReminderScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setIsNoteVisible(true)}
-                style={({ pressed }) => [styles.noteButton, pressed && styles.pressed]}>
+                style={({ pressed }) => [
+                  styles.noteButton,
+                  { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                  pressed && styles.pressed,
+                ]}>
                 <ThemedText type="smallBold" themeColor="textSecondary">
                   Notiz hinzufügen
                 </ThemedText>
@@ -222,6 +232,9 @@ export default function EditReminderScreen() {
                 clearError('time');
               }}
             />
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+              Rhythmus
+            </ThemedText>
             <RepeatSelector
               value={repeatType}
               onChange={(value) => {
@@ -280,21 +293,29 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.six,
   },
   header: {
-    marginBottom: Spacing.three,
+    marginBottom: Spacing.four,
   },
   title: {
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 40,
+    lineHeight: 44,
+    fontWeight: 700,
   },
   form: {
-    gap: Spacing.two,
+    gap: 10,
+  },
+  sectionLabel: {
+    marginTop: Spacing.two,
+    paddingHorizontal: Spacing.one,
   },
   descriptionInput: {
     minHeight: 82,
   },
   noteButton: {
     minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 999,
     alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.three,
     justifyContent: 'center',
   },
   pressed: {

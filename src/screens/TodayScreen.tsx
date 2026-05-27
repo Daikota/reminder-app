@@ -1,3 +1,4 @@
+import { SymbolView } from 'expo-symbols';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -79,7 +80,13 @@ export default function TodayScreen() {
 
   return (
     <ScreenScaffold
-      footer={<PrimaryButton label="Neue Erinnerung" onPress={() => router.push('/create-reminder')} />}>
+      footer={
+        <PrimaryButton
+          label="Neue Erinnerung"
+          iconName={{ ios: 'plus', android: 'add', web: 'add' }}
+          onPress={() => router.push('/create-reminder')}
+        />
+      }>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <ThemedText type="subtitle" style={styles.title}>
@@ -93,6 +100,12 @@ export default function TodayScreen() {
               { backgroundColor: theme.backgroundElement, borderColor: theme.border },
               pressed && styles.pressed,
             ]}>
+            <SymbolView
+              name={{ ios: 'list.bullet', android: 'list', web: 'list' }}
+              size={16}
+              weight="regular"
+              tintColor={theme.textSecondary}
+            />
             <ThemedText type="smallBold" themeColor="textSecondary">
               Erinnerungen
             </ThemedText>
@@ -101,18 +114,39 @@ export default function TodayScreen() {
 
         {status === 'loading' ? (
           <ThemedView type="surface" style={[styles.emptyCard, { borderColor: theme.border }]}>
+            <ThemedView type="backgroundElement" style={styles.emptyIcon}>
+              <SymbolView
+                name={{ ios: 'hourglass', android: 'hourglass_empty', web: 'hourglass_empty' }}
+                size={18}
+                tintColor={theme.textSecondary}
+              />
+            </ThemedView>
             <ThemedText style={styles.emptyTitle}>Erinnerungen werden geladen.</ThemedText>
           </ThemedView>
         ) : null}
 
         {status === 'error' ? (
           <ThemedView type="surface" style={[styles.emptyCard, { borderColor: theme.border }]}>
+            <ThemedView type="backgroundElement" style={styles.emptyIcon}>
+              <SymbolView
+                name={{ ios: 'exclamationmark', android: 'priority_high', web: 'priority_high' }}
+                size={18}
+                tintColor={theme.textSecondary}
+              />
+            </ThemedView>
             <ThemedText style={styles.emptyTitle}>Erinnerungen konnten nicht geladen werden.</ThemedText>
           </ThemedView>
         ) : null}
 
         {status === 'ready' && reminders.length === 0 ? (
           <ThemedView type="surface" style={[styles.emptyCard, { borderColor: theme.border }]}>
+            <ThemedView type="backgroundElement" style={styles.emptyIcon}>
+              <SymbolView
+                name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                size={18}
+                tintColor={theme.textSecondary}
+              />
+            </ThemedView>
             <ThemedText style={styles.emptyTitle}>Heute stehen keine Erinnerungen an.</ThemedText>
           </ThemedView>
         ) : null}
@@ -141,18 +175,27 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.six,
   },
   header: {
-    marginBottom: Spacing.three,
-    gap: Spacing.two,
+    marginBottom: Spacing.four,
+    gap: Spacing.three,
   },
   title: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 42,
+    lineHeight: 46,
+    fontWeight: 700,
   },
   emptyCard: {
     borderWidth: 1,
-    borderRadius: 28,
+    borderRadius: 32,
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.five,
+    gap: Spacing.three,
+  },
+  emptyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyTitle: {
     fontSize: 18,
@@ -165,9 +208,12 @@ const styles = StyleSheet.create({
   secondaryLink: {
     minHeight: 44,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 999,
     alignSelf: 'flex-start',
     paddingHorizontal: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
     justifyContent: 'center',
   },
   pressed: {
