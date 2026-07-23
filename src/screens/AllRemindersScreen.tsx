@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ReminderCard } from '@/components/ReminderCard';
@@ -17,6 +17,29 @@ export default function AllRemindersScreen() {
   const theme = useTheme();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [pendingActionIds, setPendingActionIds] = useState<ReadonlySet<string>>(
+    () => new Set()
+  );
+  const pendingActionIdsRef = useRef(new Set<string>());
+
+  const beginReminderAction = useCallback((id: string) => {
+    if (pendingActionIdsRef.current.has(id)) {
+      return false;
+    }
+
+    const nextPendingActionIds = new Set(pendingActionIdsRef.current);
+    nextPendingActionIds.add(id);
+    pendingActionIdsRef.current = nextPendingActionIds;
+    setPendingActionIds(nextPendingActionIds);
+    return true;
+  }, []);
+
+  const finishReminderAction = useCallback((id: string) => {
+    const nextPendingActionIds = new Set(pendingActionIdsRef.current);
+    nextPendingActionIds.delete(id);
+    pendingActionIdsRef.current = nextPendingActionIds;
+    setPendingActionIds(nextPendingActionIds);
+  }, []);
 
   const loadReminders = useCallback(async () => {
     try {
@@ -37,25 +60,53 @@ export default function AllRemindersScreen() {
 
   const handleDeleteReminder = useCallback(
     (id: string) => {
-      Alert.alert('Erinnerung löschen?', 'Diese Erinnerung wird dauerhaft entfernt.', [
-        {
-          text: 'Abbrechen',
-          style: 'cancel',
-        },
-        {
-          text: 'Löschen',
-          style: 'destructive',
-          onPress: () => {
-            void deleteReminder(id)
-              .then(loadReminders)
-              .catch(() => {
-                setStatus('error');
-              });
+      if (!beginReminderAction(id)) {
+        return;
+      }
+
+      let isDeleteConfirmed = false;
+
+      Alert.alert(
+        'Erinnerung löschen?',
+        'Diese Erinnerung wird dauerhaft entfernt.',
+        [
+          {
+            text: 'Abbrechen',
+            style: 'cancel',
+            onPress: () => finishReminderAction(id),
           },
-        },
-      ]);
+          {
+            text: 'Löschen',
+            style: 'destructive',
+            onPress: () => {
+              isDeleteConfirmed = true;
+              void deleteReminder(id)
+                .then(loadReminders)
+                .catch((error) => {
+                  console.warn(
+                    '[reminders] Löschen der Erinnerung ist fehlgeschlagen.',
+                    error
+                  );
+                  Alert.alert(
+                    'Löschen fehlgeschlagen',
+                    'Die Erinnerung konnte nicht gelöscht werden. Bitte versuche es erneut.'
+                  );
+                })
+                .finally(() => finishReminderAction(id));
+            },
+          },
+        ],
+        {
+          cancelable: true,
+          onDismiss: () => {
+            if (!isDeleteConfirmed) {
+              finishReminderAction(id);
+            }
+          },
+        }
+      );
     },
-    [loadReminders]
+    [beginReminderAction, finishReminderAction, loadReminders]
   );
 
   const handleOpenReminder = useCallback((id: string) => {
@@ -120,6 +171,7 @@ export default function AllRemindersScreen() {
                 key={reminder.id}
                 reminder={reminder}
                 dueDateLabel={getDueDateLabel(reminder.dueDate)}
+                isActionPending={pendingActionIds.has(reminder.id)}
                 onDelete={handleDeleteReminder}
                 onOpen={handleOpenReminder}
               />

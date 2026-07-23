@@ -24,6 +24,17 @@ export function getNotificationTriggerChannelId(trigger: unknown) {
   return typeof channelId === 'string' ? channelId : null;
 }
 
+export function isStaleReminderNotification(
+  notification: ScheduledNotificationSnapshot,
+  reminder: Pick<Reminder, 'id' | 'notificationId'>
+) {
+  return (
+    notification.isReminderNotification &&
+    notification.reminderId === reminder.id &&
+    notification.identifier !== reminder.notificationId
+  );
+}
+
 export function getReminderNotificationDate(
   reminder: Pick<Reminder, 'dueDate' | 'time'>,
   now = Date.now()

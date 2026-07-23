@@ -6,6 +6,7 @@ import {
   getReminderNotificationDate,
   getReminderNotificationOwnership,
   getNotificationTriggerChannelId,
+  isStaleReminderNotification,
   needsNotificationRepair,
   REMINDER_NOTIFICATION_KIND,
   shouldReminderHaveNotification,
@@ -194,11 +195,14 @@ async function runReminderNotificationReconciliation(
     const usesOutdatedAndroidChannel =
       Platform.OS === 'android' &&
       notification.channelId !== REMINDER_CHANNEL_ID;
+    const isStaleNotification =
+      reminder && isStaleReminderNotification(notification, reminder);
 
     if (
       reminder &&
       (!shouldReminderHaveNotification(reminder, now) ||
-        usesOutdatedAndroidChannel)
+        usesOutdatedAndroidChannel ||
+        isStaleNotification)
     ) {
       notificationIdsToCancel.add(notification.identifier);
     }

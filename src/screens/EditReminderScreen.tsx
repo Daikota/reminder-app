@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { RepeatSelector } from '@/components/RepeatSelector';
@@ -25,7 +25,6 @@ type FormErrors = {
   time?: string;
   customIntervalDays?: string;
   repeatWeekdays?: string;
-  form?: string;
 };
 
 export default function EditReminderScreen() {
@@ -43,10 +42,11 @@ export default function EditReminderScreen() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   function clearError(errorKey: keyof FormErrors) {
     if (errors[errorKey]) {
-      setErrors((currentErrors) => ({ ...currentErrors, [errorKey]: undefined, form: undefined }));
+      setErrors((currentErrors) => ({ ...currentErrors, [errorKey]: undefined }));
     }
   }
 
@@ -96,6 +96,10 @@ export default function EditReminderScreen() {
   }, [reminderId]);
 
   async function handleSave() {
+    if (isSavingRef.current) {
+      return;
+    }
+
     const normalizedTitle = title.trim();
     const timeValidation = validateRequiredTime(time);
     const parsedCustomIntervalDays = parseCustomIntervalDays(customIntervalDays, repeatType);
@@ -127,9 +131,11 @@ export default function EditReminderScreen() {
       return;
     }
 
+    isSavingRef.current = true;
+    setIsSaving(true);
+    setErrors({});
+
     try {
-      setIsSaving(true);
-      setErrors({});
       await updateReminder({
         id: reminder.id,
         title: normalizedTitle,
@@ -140,9 +146,14 @@ export default function EditReminderScreen() {
         repeatWeekdays: normalizedWeekdays,
       });
       router.replace('/reminders');
-    } catch {
-      setErrors({ form: 'Speichern ist fehlgeschlagen.' });
+    } catch (error) {
+      console.warn('[reminders] Bearbeiten der Erinnerung ist fehlgeschlagen.', error);
+      Alert.alert(
+        'Speichern fehlgeschlagen',
+        'Die Änderungen konnten nicht gespeichert werden. Bitte versuche es erneut.'
+      );
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   }
@@ -249,7 +260,6 @@ export default function EditReminderScreen() {
                   ...currentErrors,
                   customIntervalDays: undefined,
                   repeatWeekdays: undefined,
-                  form: undefined,
                 }));
               }}
             />
@@ -275,11 +285,6 @@ export default function EditReminderScreen() {
                   clearError('customIntervalDays');
                 }}
               />
-            ) : null}
-            {errors.form ? (
-              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.formError}>
-                {errors.form}
-              </ThemedText>
             ) : null}
           </View>
         ) : null}
@@ -320,9 +325,6 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
-  },
-  formError: {
-    paddingHorizontal: Spacing.one,
   },
   statusText: {
     fontSize: 18,

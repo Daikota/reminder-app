@@ -20,6 +20,7 @@ const {
   getOrphanedReminderNotificationIds,
   getReminderNotificationOwnership,
   getNotificationTriggerChannelId,
+  isStaleReminderNotification,
   needsNotificationRepair,
   shouldReminderHaveNotification,
 } = require('../src/services/notificationReconciliation.ts');
@@ -167,4 +168,58 @@ test('scheduled Android reminder channel can be inspected for migration', () => 
     'reminders-v2'
   );
   assert.equal(getNotificationTriggerChannelId(null), null);
+});
+
+test('only the notification ID stored by its reminder is current', () => {
+  const storedReminder = reminder();
+
+  assert.equal(
+    isStaleReminderNotification(
+      {
+        identifier: 'notification-1',
+        isReminderNotification: true,
+        reminderId: 'reminder-1',
+      },
+      storedReminder
+    ),
+    false
+  );
+  assert.equal(
+    isStaleReminderNotification(
+      {
+        identifier: 'outdated-notification',
+        isReminderNotification: true,
+        reminderId: 'reminder-1',
+      },
+      storedReminder
+    ),
+    true
+  );
+});
+
+test('an unpersisted owned notification is stale and foreign notifications are ignored', () => {
+  const reminderWithoutNotificationId = reminder({ notificationId: null });
+
+  assert.equal(
+    isStaleReminderNotification(
+      {
+        identifier: 'unpersisted-notification',
+        isReminderNotification: true,
+        reminderId: 'reminder-1',
+      },
+      reminderWithoutNotificationId
+    ),
+    true
+  );
+  assert.equal(
+    isStaleReminderNotification(
+      {
+        identifier: 'foreign-notification',
+        isReminderNotification: false,
+        reminderId: 'reminder-1',
+      },
+      reminderWithoutNotificationId
+    ),
+    false
+  );
 });

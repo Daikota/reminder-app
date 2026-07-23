@@ -12,6 +12,7 @@ import type { Reminder } from '@/types/reminder';
 type ReminderCardProps = {
   reminder: Reminder;
   dueDateLabel?: string;
+  isActionPending?: boolean;
   onComplete?: (id: string) => void;
   onDelete: (id: string) => void;
   onOpen: (id: string) => void;
@@ -20,6 +21,7 @@ type ReminderCardProps = {
 function ReminderCardComponent({
   reminder,
   dueDateLabel = 'Fällig: Heute',
+  isActionPending = false,
   onComplete,
   onDelete,
   onOpen,
@@ -84,13 +86,13 @@ function ReminderCardComponent({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Erinnerung erledigen"
-            disabled={reminder.isCompleted}
+            disabled={reminder.isCompleted || isActionPending}
             onPress={() => onComplete(reminder.id)}
             style={({ pressed }) => [
               styles.actionButton,
               { backgroundColor: theme.backgroundElement, borderColor: theme.border },
               pressed && styles.pressed,
-              reminder.isCompleted && styles.disabledAction,
+              (reminder.isCompleted || isActionPending) && styles.disabledAction,
             ]}>
             <SymbolView
               name={{ ios: 'checkmark', android: 'check', web: 'check' }}
@@ -104,11 +106,13 @@ function ReminderCardComponent({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Erinnerung löschen"
+          disabled={isActionPending}
           onPress={() => onDelete(reminder.id)}
           style={({ pressed }) => [
             styles.actionButton,
             { backgroundColor: theme.backgroundElement, borderColor: theme.border },
             pressed && styles.pressed,
+            isActionPending && styles.disabledAction,
           ]}>
           <SymbolView
             name={{ ios: 'trash', android: 'delete', web: 'delete' }}

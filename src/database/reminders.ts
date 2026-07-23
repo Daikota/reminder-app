@@ -225,17 +225,27 @@ export async function createReminder(input: CreateReminderInput) {
   );
 
   const notificationId = await scheduleReminderNotification(reminder);
+  let storedNotificationId: string | null = null;
 
   if (notificationId) {
-    await database.runAsync('UPDATE reminders SET notification_id = ? WHERE id = ?', [
-      notificationId,
-      reminder.id,
-    ]);
+    try {
+      await database.runAsync('UPDATE reminders SET notification_id = ? WHERE id = ?', [
+        notificationId,
+        reminder.id,
+      ]);
+      storedNotificationId = notificationId;
+    } catch (error) {
+      console.warn(
+        `[reminders] Notification-Verknüpfung für Erinnerung ${reminder.id} konnte nicht gespeichert werden.`,
+        error
+      );
+      await cancelReminderNotification(notificationId);
+    }
   }
 
   return {
     ...reminder,
-    notificationId,
+    notificationId: storedNotificationId,
   };
 }
 
@@ -382,7 +392,7 @@ export async function updateReminder(input: UpdateReminderInput) {
   const existingReminder = await getReminderById(input.id);
 
   if (!existingReminder) {
-    return;
+    throw new Error('Reminder to update was not found.');
   }
 
   const timeValidation = validateRequiredTime(input.time);
@@ -478,7 +488,7 @@ export async function markReminderCompleted(id: string) {
   const reminder = await getReminderById(id);
 
   if (!reminder) {
-    return;
+    throw new Error('Reminder to complete was not found.');
   }
 
   const database = await getDatabase();
