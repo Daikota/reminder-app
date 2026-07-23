@@ -445,6 +445,20 @@ export async function updateReminderDueDate(id: string, dueDate: string) {
   );
 }
 
+export async function updateReminderNotificationId(
+  id: string,
+  notificationId: string | null
+) {
+  await initializeDatabase();
+
+  const database = await getDatabase();
+
+  await database.runAsync(
+    'UPDATE reminders SET notification_id = ? WHERE id = ?',
+    [notificationId, id]
+  );
+}
+
 export async function markReminderCompleted(id: string) {
   await initializeDatabase();
 

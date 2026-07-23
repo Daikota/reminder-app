@@ -1,13 +1,39 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, useColorScheme } from 'react-native';
+import {
+  AppState,
+  type AppStateStatus,
+  StyleSheet,
+  useColorScheme,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
-import { initializeDatabase } from '@/database/reminders';
+import {
+  getAllReminders,
+  initializeDatabase,
+  updateReminderNotificationId,
+} from '@/database/reminders';
+import { reconcileReminderNotifications } from '@/services/notificationService';
+
+const notificationReconciliationStore = {
+  getReminders: getAllReminders,
+  updateNotificationId: updateReminderNotificationId,
+};
+
+function reconcileNotifications() {
+  return reconcileReminderNotifications(notificationReconciliationStore).catch(
+    (error) => {
+      console.warn(
+        '[notifications] Abgleich geplanter Erinnerungen ist fehlgeschlagen.',
+        error
+      );
+    }
+  );
+}
 
 const navigationThemes = {
   light: {
@@ -45,12 +71,34 @@ export default function RootLayout() {
 
   useEffect(() => {
     let isMounted = true;
+    let isDatabaseReady = false;
+    let currentAppState: AppStateStatus = AppState.currentState;
+
+    const appStateSubscription = AppState.addEventListener(
+      'change',
+      (nextAppState) => {
+        const hasReturnedToForeground =
+          (currentAppState === 'background' ||
+            currentAppState === 'inactive') &&
+          nextAppState === 'active';
+
+        currentAppState = nextAppState;
+
+        if (isDatabaseReady && hasReturnedToForeground) {
+          void reconcileNotifications();
+        }
+      }
+    );
 
     initializeDatabase()
       .then(() => {
-        if (isMounted) {
-          setDatabaseStatus('ready');
+        if (!isMounted) {
+          return;
         }
+
+        isDatabaseReady = true;
+        setDatabaseStatus('ready');
+        void reconcileNotifications();
       })
       .catch(() => {
         if (isMounted) {
@@ -60,6 +108,7 @@ export default function RootLayout() {
 
     return () => {
       isMounted = false;
+      appStateSubscription.remove();
     };
   }, []);
 
