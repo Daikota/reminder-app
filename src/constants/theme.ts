@@ -20,6 +20,9 @@ export const Colors = {
     accentText: '#2B1A10',
     textSecondary: '#5D6370',
     placeholder: '#7D8490',
+    error: '#9B2F2F',
+    errorSurface: '#FCE8E6',
+    disabled: '#A9B4BA',
   },
   dark: {
     text: '#F4F1F7',
@@ -33,6 +36,9 @@ export const Colors = {
     accentText: '#2B1A10',
     textSecondary: '#C6C1D2',
     placeholder: '#A9A4B7',
+    error: '#FFB4AB',
+    errorSurface: '#54383B',
+    disabled: '#74717F',
   },
 } as const;
 
@@ -67,10 +73,32 @@ export const Spacing = {
   half: 2,
   one: 4,
   two: 8,
+  twoAndHalf: 12,
   three: 16,
+  threeAndHalf: 20,
   four: 24,
   five: 32,
   six: 64,
+} as const;
+
+export const Radii = {
+  control: 16,
+  field: 18,
+  card: 24,
+  pill: 999,
+} as const;
+
+export const Typography = {
+  screenTitle: {
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: 700,
+  },
+  cardTitle: {
+    fontSize: 19,
+    lineHeight: 25,
+    fontWeight: 700,
+  },
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;

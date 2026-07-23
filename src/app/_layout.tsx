@@ -1,4 +1,5 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
   AppState,
@@ -114,6 +115,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navigationThemes[scheme]}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AnimatedSplashOverlay />
       {databaseStatus === 'ready' ? (
         <Stack

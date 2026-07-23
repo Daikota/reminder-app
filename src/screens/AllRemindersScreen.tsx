@@ -1,20 +1,17 @@
-import { SymbolView } from 'expo-symbols';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ReminderCard } from '@/components/ReminderCard';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ScreenState } from '@/components/ScreenState';
 import { Spacing } from '@/constants/theme';
 import { deleteReminder, getAllReminders } from '@/database/reminders';
-import { useTheme } from '@/hooks/use-theme';
 import type { Reminder } from '@/types/reminder';
 import { getDueDateLabel } from '@/utils/dueDate';
 
 export default function AllRemindersScreen() {
-  const theme = useTheme();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [pendingActionIds, setPendingActionIds] = useState<ReadonlySet<string>>(
@@ -119,49 +116,26 @@ export default function AllRemindersScreen() {
   return (
     <ScreenScaffold>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <ThemedText type="subtitle" style={styles.title}>
-            Erinnerungen
-          </ThemedText>
-        </View>
+        <ScreenHeader title="Erinnerungen" onBack={() => router.back()} />
 
         {status === 'loading' ? (
-          <ThemedView type="surface" style={[styles.emptyCard, { borderColor: theme.border }]}>
-            <ThemedView type="backgroundElement" style={styles.emptyIcon}>
-              <SymbolView
-                name={{ ios: 'hourglass', android: 'hourglass_empty', web: 'hourglass_empty' }}
-                size={18}
-                tintColor={theme.textSecondary}
-              />
-            </ThemedView>
-            <ThemedText style={styles.emptyTitle}>Erinnerungen werden geladen.</ThemedText>
-          </ThemedView>
+          <ScreenState message="Erinnerungen werden geladen." loading />
         ) : null}
 
         {status === 'error' ? (
-          <ThemedView type="surface" style={[styles.emptyCard, { borderColor: theme.border }]}>
-            <ThemedView type="backgroundElement" style={styles.emptyIcon}>
-              <SymbolView
-                name={{ ios: 'exclamationmark', android: 'priority_high', web: 'priority_high' }}
-                size={18}
-                tintColor={theme.textSecondary}
-              />
-            </ThemedView>
-            <ThemedText style={styles.emptyTitle}>Erinnerungen konnten nicht geladen werden.</ThemedText>
-          </ThemedView>
+          <ScreenState
+            message="Erinnerungen konnten nicht geladen werden."
+            tone="error"
+            iconName={{
+              ios: 'exclamationmark',
+              android: 'priority_high',
+              web: 'priority_high',
+            }}
+          />
         ) : null}
 
         {status === 'ready' && reminders.length === 0 ? (
-          <ThemedView type="surface" style={[styles.emptyCard, { borderColor: theme.border }]}>
-            <ThemedView type="backgroundElement" style={styles.emptyIcon}>
-              <SymbolView
-                name={{ ios: 'tray', android: 'inbox', web: 'inbox' }}
-                size={18}
-                tintColor={theme.textSecondary}
-              />
-            </ThemedView>
-            <ThemedText style={styles.emptyTitle}>Noch keine Erinnerungen erstellt.</ThemedText>
-          </ThemedView>
+          <ScreenState message="Noch keine Erinnerungen erstellt." />
         ) : null}
 
         {status === 'ready' && reminders.length > 0 ? (
@@ -185,34 +159,7 @@ export default function AllRemindersScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: Spacing.six,
-  },
-  header: {
-    marginBottom: Spacing.three,
-  },
-  title: {
-    fontSize: 40,
-    lineHeight: 44,
-    fontWeight: 700,
-  },
-  emptyCard: {
-    borderWidth: 1,
-    borderRadius: 32,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.five,
-    gap: Spacing.three,
-  },
-  emptyIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: 700,
+    paddingBottom: Spacing.four,
   },
   reminderList: {
     gap: Spacing.three,

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radii, Spacing, Typography } from '@/constants/theme';
 import { getRepeatLabel } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { Reminder } from '@/types/reminder';
@@ -27,9 +27,12 @@ function ReminderCardComponent({
   onOpen,
 }: ReminderCardProps) {
   const theme = useTheme();
+  const isOverdue = dueDateLabel.startsWith('Überfällig');
 
   return (
-    <ThemedView type="surface" style={[styles.card, { borderColor: theme.border }]}>
+    <ThemedView
+      type="surface"
+      style={[styles.card, { borderColor: isOverdue ? theme.error : theme.border }]}>
       <Pressable
         accessibilityRole="button"
         onPress={() => onOpen(reminder.id)}
@@ -57,18 +60,33 @@ function ReminderCardComponent({
         ) : null}
 
         <View style={styles.metaRow}>
-          <ThemedView type="surfaceMuted" style={[styles.metaPill, { borderColor: theme.border }]}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              {dueDateLabel}
-            </ThemedText>
-          </ThemedView>
           {reminder.time ? (
-            <ThemedView type="surfaceMuted" style={[styles.metaPill, { borderColor: theme.border }]}>
-              <ThemedText type="smallBold" themeColor="textSecondary">
+            <ThemedView
+              type="backgroundSelected"
+              style={[styles.timePill, { borderColor: theme.accent }]}>
+              <SymbolView
+                name={{ ios: 'clock', android: 'schedule', web: 'schedule' }}
+                size={15}
+                weight="bold"
+                tintColor={theme.accent}
+              />
+              <ThemedText type="smallBold" style={styles.timeText}>
                 {reminder.time}
               </ThemedText>
             </ThemedView>
           ) : null}
+          <ThemedView
+            type={isOverdue ? 'errorSurface' : 'surfaceMuted'}
+            style={[
+              styles.metaPill,
+              { borderColor: isOverdue ? theme.error : theme.border },
+            ]}>
+            <ThemedText
+              type="smallBold"
+              themeColor={isOverdue ? 'error' : 'textSecondary'}>
+              {dueDateLabel}
+            </ThemedText>
+          </ThemedView>
           <ThemedView type="surfaceMuted" style={[styles.metaPill, { borderColor: theme.border }]}>
             <ThemedText type="smallBold" themeColor="textSecondary">
               {getRepeatLabel(
@@ -81,7 +99,7 @@ function ReminderCardComponent({
         </View>
       </Pressable>
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, { borderTopColor: theme.border }]}>
         {onComplete ? (
           <Pressable
             accessibilityRole="button"
@@ -89,8 +107,8 @@ function ReminderCardComponent({
             disabled={reminder.isCompleted || isActionPending}
             onPress={() => onComplete(reminder.id)}
             style={({ pressed }) => [
-              styles.actionButton,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              styles.completeButton,
+              { backgroundColor: theme.backgroundSelected, borderColor: theme.accent },
               pressed && styles.pressed,
               (reminder.isCompleted || isActionPending) && styles.disabledAction,
             ]}>
@@ -98,8 +116,11 @@ function ReminderCardComponent({
               name={{ ios: 'checkmark', android: 'check', web: 'check' }}
               size={18}
               weight="bold"
-              tintColor={theme.textSecondary}
+              tintColor={theme.accent}
             />
+            <ThemedText type="smallBold">
+              Erledigen
+            </ThemedText>
           </Pressable>
         ) : null}
 
@@ -109,8 +130,8 @@ function ReminderCardComponent({
           disabled={isActionPending}
           onPress={() => onDelete(reminder.id)}
           style={({ pressed }) => [
-            styles.actionButton,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            styles.deleteButton,
+            { backgroundColor: theme.errorSurface, borderColor: theme.error },
             pressed && styles.pressed,
             isActionPending && styles.disabledAction,
           ]}>
@@ -118,7 +139,7 @@ function ReminderCardComponent({
             name={{ ios: 'trash', android: 'delete', web: 'delete' }}
             size={18}
             weight="regular"
-            tintColor={theme.textSecondary}
+            tintColor={theme.error}
           />
         </Pressable>
       </View>
@@ -131,15 +152,13 @@ export const ReminderCard = memo(ReminderCardComponent);
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    paddingRight: 78,
-    gap: Spacing.three,
+    borderRadius: Radii.card,
+    overflow: 'hidden',
   },
   contentPressable: {
-    gap: Spacing.two,
+    gap: Spacing.twoAndHalf,
     minHeight: 44,
+    padding: Spacing.threeAndHalf,
   },
   titleRow: {
     flexDirection: 'row',
@@ -148,16 +167,14 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 19,
-    lineHeight: 25,
-    fontWeight: 700,
+    ...Typography.cardTitle,
   },
   completedTitle: {
     textDecorationLine: 'line-through',
   },
   statusPill: {
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: Radii.pill,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
   },
@@ -172,21 +189,48 @@ const styles = StyleSheet.create({
   metaPill: {
     maxWidth: '100%',
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: Radii.pill,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
+  timePill: {
+    maxWidth: '100%',
+    borderWidth: 1,
+    borderRadius: Radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  timeText: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
   actions: {
-    position: 'absolute',
-    right: Spacing.three,
-    top: Spacing.three,
+    borderTopWidth: 1,
+    paddingHorizontal: Spacing.threeAndHalf,
+    paddingVertical: Spacing.twoAndHalf,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     gap: Spacing.two,
   },
-  actionButton: {
-    width: 44,
-    minHeight: 44,
+  completeButton: {
+    flex: 1,
+    minHeight: 48,
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: Radii.control,
+    paddingHorizontal: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  deleteButton: {
+    width: 48,
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: Radii.control,
     alignItems: 'center',
     justifyContent: 'center',
   },

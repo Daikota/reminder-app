@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ReminderWeekday } from '@/types/reminder';
 
@@ -37,7 +37,7 @@ export function WeekdaySelector({ value, error, onChange }: WeekdaySelectorProps
   return (
     <ThemedView
       type="backgroundElement"
-      style={[styles.container, { borderColor: error ? theme.accent : theme.border }]}>
+      style={[styles.container, { borderColor: error ? theme.error : theme.border }]}>
       <ThemedText type="smallBold" themeColor="textSecondary">
         Wochentage
       </ThemedText>
@@ -69,7 +69,7 @@ export function WeekdaySelector({ value, error, onChange }: WeekdaySelectorProps
         })}
       </View>
       {error ? (
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.errorText}>
+        <ThemedText type="smallBold" themeColor="error" style={styles.errorText}>
           {error}
         </ThemedText>
       ) : null}
@@ -80,7 +80,7 @@ export function WeekdaySelector({ value, error, onChange }: WeekdaySelectorProps
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: Radii.field,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     gap: Spacing.three,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     width: 44,
     minHeight: 44,
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: Radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -2,7 +2,7 @@ import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type TextFieldProps = TextInputProps & {
@@ -16,7 +16,7 @@ export function TextField({ label, error, style, placeholderTextColor, ...props 
   return (
     <ThemedView
       type="backgroundElement"
-      style={[styles.container, { borderColor: error ? theme.accent : theme.border }]}>
+      style={[styles.container, { borderColor: error ? theme.error : theme.border }]}>
       <ThemedText type="smallBold" themeColor="textSecondary">
         {label}
       </ThemedText>
@@ -27,7 +27,7 @@ export function TextField({ label, error, style, placeholderTextColor, ...props 
         {...props}
       />
       {error ? (
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.errorText}>
+        <ThemedText type="smallBold" themeColor="error" style={styles.errorText}>
           {error}
         </ThemedText>
       ) : null}
@@ -38,9 +38,9 @@ export function TextField({ label, error, style, placeholderTextColor, ...props 
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: Radii.field,
     paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
+    paddingVertical: Spacing.twoAndHalf,
     gap: Spacing.one,
   },
   input: {

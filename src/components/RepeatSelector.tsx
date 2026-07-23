@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ReminderRepeatType } from '@/types/reminder';
 
@@ -60,7 +60,7 @@ export function RepeatSelector({ value, onChange }: RepeatSelectorProps) {
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: Radii.field,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     gap: Spacing.three,
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     minWidth: 112,
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: Radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,

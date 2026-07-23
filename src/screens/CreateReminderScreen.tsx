@@ -1,15 +1,17 @@
+import { SymbolView } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { RepeatSelector } from '@/components/RepeatSelector';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { TimeInput } from '@/components/TimeInput';
 import { WeekdaySelector } from '@/components/WeekdaySelector';
-import { Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import { createReminder } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { ReminderRepeatType, ReminderWeekday } from '@/types/reminder';
@@ -119,104 +121,115 @@ export default function CreateReminderScreen() {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <ThemedText type="subtitle" style={styles.title}>
-            Neue Erinnerung
-          </ThemedText>
-        </View>
+        <ScreenHeader title="Neue Erinnerung" onBack={() => router.back()} />
 
         <View style={styles.form}>
-          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-            Details
-          </ThemedText>
-          <TextField
-            label="Titel"
-            placeholder="z. B. Wasser trinken"
-            returnKeyType="next"
-            value={title}
-            error={errors.title}
-            onChangeText={(value) => {
-              setTitle(value);
-              clearError('title');
-            }}
-          />
+          <View style={styles.section}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+              Details
+            </ThemedText>
+            <View style={styles.fields}>
+              <TextField
+                label="Titel"
+                placeholder="z. B. Wasser trinken"
+                returnKeyType="next"
+                value={title}
+                error={errors.title}
+                onChangeText={(value) => {
+                  setTitle(value);
+                  clearError('title');
+                }}
+              />
 
-          {isNoteVisible ? (
-            <TextField
-              label="Notiz"
-              placeholder="Optionaler Hinweis"
-              multiline
-              numberOfLines={3}
-              value={description}
-              onChangeText={setDescription}
-              style={styles.descriptionInput}
-            />
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setIsNoteVisible(true)}
-              style={({ pressed }) => [
-                styles.noteButton,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                pressed && styles.pressed,
-              ]}>
-              <ThemedText type="smallBold" themeColor="textSecondary">
-                Notiz hinzufügen
-              </ThemedText>
-            </Pressable>
-          )}
+              {isNoteVisible ? (
+                <TextField
+                  label="Notiz"
+                  placeholder="Optionaler Hinweis"
+                  multiline
+                  numberOfLines={3}
+                  value={description}
+                  onChangeText={setDescription}
+                  style={styles.descriptionInput}
+                />
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setIsNoteVisible(true)}
+                  style={({ pressed }) => [
+                    styles.noteButton,
+                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                    pressed && styles.pressed,
+                  ]}>
+                  <SymbolView
+                    name={{ ios: 'plus', android: 'add', web: 'add' }}
+                    size={17}
+                    weight="bold"
+                    tintColor={theme.textSecondary}
+                  />
+                  <ThemedText type="smallBold" themeColor="textSecondary">
+                    Notiz hinzufügen
+                  </ThemedText>
+                </Pressable>
+              )}
 
-          <TimeInput
-            value={time}
-            error={errors.time}
-            onChangeText={(value) => {
-              setTime(value);
-              clearError('time');
-            }}
-          />
-          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-            Rhythmus
-          </ThemedText>
-          <RepeatSelector
-            value={repeatType}
-            onChange={(value) => {
-              setRepeatType(value);
-              if (value === 'weekly' && repeatWeekdays.length === 0) {
-                setRepeatWeekdays([getTodayWeekday()]);
-              }
-              if (value !== 'custom_days') {
-                setCustomIntervalDays('');
-              }
-              setErrors((currentErrors) => ({
-                ...currentErrors,
-                customIntervalDays: undefined,
-                repeatWeekdays: undefined,
-              }));
-            }}
-          />
-          {repeatType === 'weekly' ? (
-            <WeekdaySelector
-              value={repeatWeekdays}
-              error={errors.repeatWeekdays}
-              onChange={(value) => {
-                setRepeatWeekdays(value);
-                clearError('repeatWeekdays');
-              }}
-            />
-          ) : null}
-          {repeatType === 'custom_days' ? (
-            <TextField
-              label="Intervall"
-              placeholder="z. B. 7"
-              keyboardType="number-pad"
-              value={customIntervalDays}
-              error={errors.customIntervalDays}
-              onChangeText={(value) => {
-                setCustomIntervalDays(value);
-                clearError('customIntervalDays');
-              }}
-            />
-          ) : null}
+              <TimeInput
+                value={time}
+                error={errors.time}
+                onChangeText={(value) => {
+                  setTime(value);
+                  clearError('time');
+                }}
+              />
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+              Rhythmus
+            </ThemedText>
+            <View style={styles.fields}>
+              <RepeatSelector
+                value={repeatType}
+                onChange={(value) => {
+                  setRepeatType(value);
+                  if (value === 'weekly' && repeatWeekdays.length === 0) {
+                    setRepeatWeekdays([getTodayWeekday()]);
+                  }
+                  if (value !== 'custom_days') {
+                    setCustomIntervalDays('');
+                  }
+                  setErrors((currentErrors) => ({
+                    ...currentErrors,
+                    customIntervalDays: undefined,
+                    repeatWeekdays: undefined,
+                  }));
+                }}
+              />
+              {repeatType === 'weekly' ? (
+                <WeekdaySelector
+                  value={repeatWeekdays}
+                  error={errors.repeatWeekdays}
+                  onChange={(value) => {
+                    setRepeatWeekdays(value);
+                    clearError('repeatWeekdays');
+                  }}
+                />
+              ) : null}
+              {repeatType === 'custom_days' ? (
+                <TextField
+                  label="Intervall"
+                  placeholder="z. B. 7"
+                  keyboardType="number-pad"
+                  value={customIntervalDays}
+                  error={errors.customIntervalDays}
+                  onChangeText={(value) => {
+                    setCustomIntervalDays(value);
+                    clearError('customIntervalDays');
+                  }}
+                />
+              ) : null}
+            </View>
+          </View>
         </View>
       </ScrollView>
     </ScreenScaffold>
@@ -225,21 +238,18 @@ export default function CreateReminderScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: Spacing.six,
-  },
-  header: {
-    marginBottom: Spacing.four,
-  },
-  title: {
-    fontSize: 40,
-    lineHeight: 44,
-    fontWeight: 700,
+    paddingBottom: Spacing.four,
   },
   form: {
-    gap: 10,
+    gap: Spacing.four,
+  },
+  section: {
+    gap: Spacing.twoAndHalf,
+  },
+  fields: {
+    gap: Spacing.twoAndHalf,
   },
   sectionLabel: {
-    marginTop: Spacing.two,
     paddingHorizontal: Spacing.one,
   },
   descriptionInput: {
@@ -248,10 +258,13 @@ const styles = StyleSheet.create({
   noteButton: {
     minHeight: 44,
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: Radii.control,
     alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.twoAndHalf,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.two,
   },
   pressed: {
     opacity: 0.72,
