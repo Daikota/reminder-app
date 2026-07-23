@@ -5,6 +5,7 @@ import {
   getOrphanedReminderNotificationIds,
   getReminderNotificationDate,
   getReminderNotificationOwnership,
+  getNotificationTriggerChannelId,
   needsNotificationRepair,
   REMINDER_NOTIFICATION_KIND,
   shouldReminderHaveNotification,
@@ -12,7 +13,8 @@ import {
 } from '@/services/notificationReconciliation';
 import type { Reminder } from '@/types/reminder';
 
-const REMINDER_CHANNEL_ID = 'reminders';
+const REMINDER_CHANNEL_ID = 'reminders-v2';
+const REMINDER_VIBRATION_PATTERN = [0, 250, 250, 250];
 
 type NotificationReconciliationStore = {
   getReminders: () => Promise<Reminder[]>;
@@ -46,7 +48,13 @@ async function ensureReminderChannel() {
 
   await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
     name: 'Erinnerungen',
-    importance: Notifications.AndroidImportance.DEFAULT,
+    description: 'Fällige Erinnerungen mit Ton und Vibration',
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: 'default',
+    enableVibrate: true,
+    vibrationPattern: REMINDER_VIBRATION_PATTERN,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    showBadge: true,
   });
 }
 
@@ -90,6 +98,13 @@ export async function scheduleReminderNotification(reminder: Reminder) {
       content: {
         title: reminder.title,
         body: reminder.description ?? 'Deine Erinnerung ist fällig.',
+        ...(Platform.OS === 'android'
+          ? {
+              priority: Notifications.AndroidNotificationPriority.HIGH,
+              sound: 'default' as const,
+              vibrate: REMINDER_VIBRATION_PATTERN,
+            }
+          : {}),
         data: {
           notificationKind: REMINDER_NOTIFICATION_KIND,
           reminderId: reminder.id,
@@ -131,6 +146,7 @@ function toScheduledNotificationSnapshot(
   notification: Notifications.NotificationRequest
 ): ScheduledNotificationSnapshot {
   return {
+    channelId: getNotificationTriggerChannelId(notification.trigger),
     identifier: notification.identifier,
     ...getReminderNotificationOwnership(notification.content.data),
   };
@@ -176,8 +192,15 @@ async function runReminderNotificationReconciliation(
     }
 
     const reminder = remindersById.get(notification.reminderId);
+    const usesOutdatedAndroidChannel =
+      Platform.OS === 'android' &&
+      notification.channelId !== REMINDER_CHANNEL_ID;
 
-    if (reminder && !shouldReminderHaveNotification(reminder, now)) {
+    if (
+      reminder &&
+      (!shouldReminderHaveNotification(reminder, now) ||
+        usesOutdatedAndroidChannel)
+    ) {
       notificationIdsToCancel.add(notification.identifier);
     }
   }
@@ -193,11 +216,19 @@ async function runReminderNotificationReconciliation(
   }
 
   const scheduledNotificationIds = new Set(
-    scheduledNotifications
+    snapshots
+      .filter((notification) => {
+        if (canceledNotificationIds.has(notification.identifier)) {
+          return false;
+        }
+
+        return (
+          Platform.OS !== 'android' ||
+          !notification.isReminderNotification ||
+          notification.channelId === REMINDER_CHANNEL_ID
+        );
+      })
       .map((notification) => notification.identifier)
-      .filter(
-        (notificationId) => !canceledNotificationIds.has(notificationId)
-      )
   );
   let repaired = 0;
 

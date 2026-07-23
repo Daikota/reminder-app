@@ -19,7 +19,7 @@ export type Reminder = {
 export type CreateReminderInput = {
   title: string;
   description?: string | null;
-  time?: string | null;
+  time: string;
   repeatType?: ReminderRepeatType;
   customIntervalDays?: number | null;
   repeatWeekdays?: ReminderWeekday[] | null;
@@ -29,7 +29,7 @@ export type UpdateReminderInput = {
   id: string;
   title: string;
   description?: string | null;
-  time?: string | null;
+  time: string;
   repeatType: ReminderRepeatType;
   customIntervalDays?: number | null;
   repeatWeekdays?: ReminderWeekday[] | null;

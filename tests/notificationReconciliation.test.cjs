@@ -19,6 +19,7 @@ require.extensions['.ts'] = function loadTypeScript(module, filename) {
 const {
   getOrphanedReminderNotificationIds,
   getReminderNotificationOwnership,
+  getNotificationTriggerChannelId,
   needsNotificationRepair,
   shouldReminderHaveNotification,
 } = require('../src/services/notificationReconciliation.ts');
@@ -155,4 +156,15 @@ test('current and legacy reminder data are recognized defensively', () => {
       reminderId: 'foreign-reminder',
     }
   );
+});
+
+test('scheduled Android reminder channel can be inspected for migration', () => {
+  assert.equal(
+    getNotificationTriggerChannelId({
+      channelId: 'reminders-v2',
+      type: 'date',
+    }),
+    'reminders-v2'
+  );
+  assert.equal(getNotificationTriggerChannelId(null), null);
 });

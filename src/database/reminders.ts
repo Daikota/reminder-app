@@ -16,6 +16,7 @@ import {
   calculateNextDueDateFromToday,
   getTodayDateKey,
 } from '@/utils/dueDate';
+import { validateRequiredTime } from '@/utils/reminderValidation';
 
 const DATABASE_NAME = 'reminder-app.db';
 
@@ -158,11 +159,17 @@ export async function createReminder(input: CreateReminderInput) {
   await initializeDatabase();
 
   const database = await getDatabase();
+  const timeValidation = validateRequiredTime(input.time);
+
+  if (!timeValidation.isValid) {
+    throw new Error(timeValidation.error);
+  }
+
   const now = new Date().toISOString();
   const title = input.title.trim();
   const description = input.description?.trim() ? input.description.trim() : null;
   const repeatType = input.repeatType ?? 'daily';
-  const time = input.time ?? null;
+  const time = timeValidation.value;
   const customIntervalDays =
     repeatType === 'custom_days' ? input.customIntervalDays ?? null : null;
   const repeatWeekdays = repeatType === 'weekly' ? input.repeatWeekdays ?? null : null;
@@ -378,9 +385,15 @@ export async function updateReminder(input: UpdateReminderInput) {
     return;
   }
 
+  const timeValidation = validateRequiredTime(input.time);
+
+  if (!timeValidation.isValid) {
+    throw new Error(timeValidation.error);
+  }
+
   const now = new Date().toISOString();
   const description = input.description?.trim() ? input.description.trim() : null;
-  const time = input.time ?? null;
+  const time = timeValidation.value;
   const customIntervalDays =
     input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null;
   const repeatWeekdays = input.repeatType === 'weekly' ? input.repeatWeekdays ?? null : null;

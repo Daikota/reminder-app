@@ -8,10 +8,21 @@ type ReconciliationReminder = Pick<
 >;
 
 export type ScheduledNotificationSnapshot = {
+  channelId: string | null;
   identifier: string;
   isReminderNotification: boolean;
   reminderId: string | null;
 };
+
+export function getNotificationTriggerChannelId(trigger: unknown) {
+  if (!trigger || typeof trigger !== 'object') {
+    return null;
+  }
+
+  const channelId = (trigger as Record<string, unknown>).channelId;
+
+  return typeof channelId === 'string' ? channelId : null;
+}
 
 export function getReminderNotificationDate(
   reminder: Pick<Reminder, 'dueDate' | 'time'>,

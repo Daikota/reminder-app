@@ -40,6 +40,29 @@ export function normalizeOptionalTime(value: string) {
   return hour <= 23 && minute <= 59 ? formatTime(hour, minute) : undefined;
 }
 
+export function validateRequiredTime(value: string) {
+  const normalizedTime = normalizeOptionalTime(value);
+
+  if (normalizedTime === null) {
+    return {
+      isValid: false as const,
+      error: 'Bitte füge eine Uhrzeit hinzu.',
+    };
+  }
+
+  if (normalizedTime === undefined) {
+    return {
+      isValid: false as const,
+      error: 'Bitte nutze z. B. 17, 1730 oder 17:30.',
+    };
+  }
+
+  return {
+    isValid: true as const,
+    value: normalizedTime,
+  };
+}
+
 export function parseCustomIntervalDays(value: string, repeatType: ReminderRepeatType) {
   if (repeatType !== 'custom_days') {
     return null;

@@ -15,9 +15,9 @@ import { useTheme } from '@/hooks/use-theme';
 import type { ReminderRepeatType, ReminderWeekday } from '@/types/reminder';
 import { getTodayWeekday } from '@/utils/dueDate';
 import {
-  normalizeOptionalTime,
   normalizeRepeatWeekdays,
   parseCustomIntervalDays,
+  validateRequiredTime,
 } from '@/utils/reminderValidation';
 
 type FormErrors = {
@@ -48,7 +48,7 @@ export default function CreateReminderScreen() {
 
   async function handleSave() {
     const normalizedTitle = title.trim();
-    const normalizedTime = normalizeOptionalTime(time);
+    const timeValidation = validateRequiredTime(time);
     const parsedCustomIntervalDays = parseCustomIntervalDays(customIntervalDays, repeatType);
     const normalizedWeekdays = normalizeRepeatWeekdays(repeatType, repeatWeekdays);
     const nextErrors: FormErrors = {};
@@ -57,8 +57,8 @@ export default function CreateReminderScreen() {
       nextErrors.title = 'Titel fehlt.';
     }
 
-    if (normalizedTime === undefined) {
-      nextErrors.time = 'Bitte als 17, 1730 oder 17:30 eingeben.';
+    if (!timeValidation.isValid) {
+      nextErrors.time = timeValidation.error;
     }
 
     if (parsedCustomIntervalDays === undefined) {
@@ -69,7 +69,7 @@ export default function CreateReminderScreen() {
       nextErrors.repeatWeekdays = 'Bitte mindestens einen Tag wählen.';
     }
 
-    if (Object.keys(nextErrors).length > 0) {
+    if (Object.keys(nextErrors).length > 0 || !timeValidation.isValid) {
       setErrors(nextErrors);
       return;
     }
@@ -80,7 +80,7 @@ export default function CreateReminderScreen() {
       await createReminder({
         title: normalizedTitle,
         description,
-        time: normalizedTime,
+        time: timeValidation.value,
         repeatType,
         customIntervalDays: parsedCustomIntervalDays,
         repeatWeekdays: normalizedWeekdays,
