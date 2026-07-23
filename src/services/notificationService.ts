@@ -82,6 +82,10 @@ export async function requestNotificationPermission() {
 
 export async function scheduleReminderNotification(reminder: Reminder) {
   try {
+    if (reminder.isCompleted) {
+      return null;
+    }
+
     const hasPermission = await requestNotificationPermission();
 
     if (!hasPermission) {

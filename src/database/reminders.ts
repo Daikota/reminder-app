@@ -14,9 +14,14 @@ import type {
 import {
   calculateInitialDueDate,
   calculateNextDueDateFromToday,
+  calculateUpdatedDueDate,
   getTodayDateKey,
+  isValidDateKey,
 } from '@/utils/dueDate';
-import { validateRequiredTime } from '@/utils/reminderValidation';
+import {
+  validateFutureOneTimeSchedule,
+  validateRequiredTime,
+} from '@/utils/reminderValidation';
 
 const DATABASE_NAME = 'reminder-app.db';
 
@@ -47,7 +52,13 @@ function getDatabase() {
 }
 
 function isReminderRepeatType(value: string): value is ReminderRepeatType {
-  return value === 'daily' || value === 'weekly' || value === 'monthly' || value === 'custom_days';
+  return (
+    value === 'once' ||
+    value === 'daily' ||
+    value === 'weekly' ||
+    value === 'monthly' ||
+    value === 'custom_days'
+  );
 }
 
 function isReminderWeekday(value: unknown): value is ReminderWeekday {
@@ -168,11 +179,33 @@ export async function createReminder(input: CreateReminderInput) {
   const now = new Date().toISOString();
   const title = input.title.trim();
   const description = input.description?.trim() ? input.description.trim() : null;
-  const repeatType = input.repeatType ?? 'daily';
+  const repeatType = input.repeatType ?? 'once';
   const time = timeValidation.value;
   const customIntervalDays =
     repeatType === 'custom_days' ? input.customIntervalDays ?? null : null;
   const repeatWeekdays = repeatType === 'weekly' ? input.repeatWeekdays ?? null : null;
+  const dueDate =
+    repeatType === 'once'
+      ? input.dueDate
+      : calculateInitialDueDate({
+          repeatType,
+          customIntervalDays,
+          repeatWeekdays,
+          time,
+        });
+
+  if (!dueDate || !isValidDateKey(dueDate)) {
+    throw new Error('A valid due date is required for one-time reminders.');
+  }
+
+  if (repeatType === 'once') {
+    const scheduleValidation = validateFutureOneTimeSchedule(dueDate, time);
+
+    if (!scheduleValidation.isValid) {
+      throw new Error(scheduleValidation.error);
+    }
+  }
+
   const reminder: Reminder = {
     id: createReminderId(),
     title,
@@ -181,12 +214,7 @@ export async function createReminder(input: CreateReminderInput) {
     repeatType,
     customIntervalDays,
     repeatWeekdays,
-    dueDate: calculateInitialDueDate({
-      repeatType,
-      customIntervalDays,
-      repeatWeekdays,
-      time,
-    }),
+    dueDate,
     notificationId: null,
     isCompleted: false,
     createdAt: now,
@@ -349,6 +377,7 @@ export async function getDueReminders(today: string) {
       updated_at
     FROM reminders
     WHERE due_date <= ?
+      AND is_completed = 0
     ORDER BY due_date ASC,
       CASE WHEN time IS NULL THEN 1 ELSE 0 END ASC,
       time ASC,
@@ -407,12 +436,31 @@ export async function updateReminder(input: UpdateReminderInput) {
   const customIntervalDays =
     input.repeatType === 'custom_days' ? input.customIntervalDays ?? null : null;
   const repeatWeekdays = input.repeatType === 'weekly' ? input.repeatWeekdays ?? null : null;
-  const dueDate = calculateInitialDueDate({
+  const dueDate = calculateUpdatedDueDate(existingReminder, {
     repeatType: input.repeatType,
     customIntervalDays,
     repeatWeekdays,
     time,
+    dueDate: input.dueDate,
   });
+  const oneTimeScheduleChanged =
+    existingReminder.repeatType !== 'once' ||
+    dueDate !== existingReminder.dueDate ||
+    time !== existingReminder.time;
+
+  if (input.repeatType === 'once') {
+    if (!isValidDateKey(dueDate)) {
+      throw new Error('A valid due date is required for one-time reminders.');
+    }
+
+    if (oneTimeScheduleChanged) {
+      const scheduleValidation = validateFutureOneTimeSchedule(dueDate, time);
+
+      if (!scheduleValidation.isValid) {
+        throw new Error(scheduleValidation.error);
+      }
+    }
+  }
   const updatedReminder: Reminder = {
     ...existingReminder,
     title: input.title.trim(),
@@ -425,9 +473,28 @@ export async function updateReminder(input: UpdateReminderInput) {
     notificationId: null,
     updatedAt: now,
   };
+  const serializedRepeatWeekdays = serializeRepeatWeekdays(
+    input.repeatType,
+    repeatWeekdays
+  );
+  const existingSerializedRepeatWeekdays = serializeRepeatWeekdays(
+    existingReminder.repeatType,
+    existingReminder.repeatWeekdays
+  );
+  const hasReminderChanges =
+    input.title.trim() !== existingReminder.title ||
+    description !== existingReminder.description ||
+    time !== existingReminder.time ||
+    input.repeatType !== existingReminder.repeatType ||
+    customIntervalDays !== existingReminder.customIntervalDays ||
+    serializedRepeatWeekdays !== existingSerializedRepeatWeekdays ||
+    dueDate !== existingReminder.dueDate;
+  let notificationId = existingReminder.notificationId;
 
-  await cancelReminderNotification(existingReminder.notificationId);
-  const notificationId = await scheduleReminderNotification(updatedReminder);
+  if (hasReminderChanges) {
+    await cancelReminderNotification(existingReminder.notificationId);
+    notificationId = await scheduleReminderNotification(updatedReminder);
+  }
 
   await database.runAsync(
     `UPDATE reminders
@@ -447,7 +514,7 @@ export async function updateReminder(input: UpdateReminderInput) {
       time,
       input.repeatType,
       customIntervalDays,
-      serializeRepeatWeekdays(input.repeatType, repeatWeekdays),
+      serializedRepeatWeekdays,
       dueDate,
       notificationId,
       now,
@@ -494,6 +561,16 @@ export async function markReminderCompleted(id: string) {
   const database = await getDatabase();
   const now = new Date().toISOString();
   const nextDueDate = calculateNextDueDateFromToday(reminder);
+
+  if (!nextDueDate) {
+    await cancelReminderNotification(reminder.notificationId);
+    await database.runAsync(
+      'UPDATE reminders SET notification_id = NULL, is_completed = 1, updated_at = ? WHERE id = ?',
+      [now, id]
+    );
+    return;
+  }
+
   const nextReminder: Reminder = {
     ...reminder,
     dueDate: nextDueDate,
@@ -536,6 +613,10 @@ export function getRepeatLabel(
   customIntervalDays?: number | null,
   repeatWeekdays?: ReminderWeekday[] | null
 ) {
+  if (repeatType === 'once') {
+    return 'Einmalig';
+  }
+
   if (repeatType === 'weekly') {
     return repeatWeekdays?.length
       ? `Wöchentlich · ${repeatWeekdays.map((weekday) => weekdayLabels[weekday]).join(', ')}`

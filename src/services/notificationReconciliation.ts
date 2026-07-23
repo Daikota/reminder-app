@@ -1,4 +1,5 @@
 import type { Reminder } from '@/types/reminder';
+import { getLocalDateTime } from '../utils/dueDate';
 
 export const REMINDER_NOTIFICATION_KIND = 'reminder';
 
@@ -43,32 +44,9 @@ export function getReminderNotificationDate(
     return null;
   }
 
-  const [year, month, day] = reminder.dueDate.split('-').map(Number);
-  const [hour, minute] = reminder.time.split(':').map(Number);
+  const date = getLocalDateTime(reminder.dueDate, reminder.time);
 
-  if (
-    ![year, month, day, hour, minute].every(Number.isInteger) ||
-    month < 1 ||
-    month > 12 ||
-    day < 1 ||
-    day > 31 ||
-    hour < 0 ||
-    hour > 23 ||
-    minute < 0 ||
-    minute > 59
-  ) {
-    return null;
-  }
-
-  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
-  const hasExpectedLocalParts =
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day &&
-    date.getHours() === hour &&
-    date.getMinutes() === minute;
-
-  return hasExpectedLocalParts && date.getTime() > now ? date : null;
+  return date && date.getTime() > now ? date : null;
 }
 
 export function shouldReminderHaveNotification(

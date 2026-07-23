@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { DateInput } from '@/components/DateInput';
 import { RepeatSelector } from '@/components/RepeatSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
@@ -16,15 +17,19 @@ import { Radii, Spacing } from '@/constants/theme';
 import { getReminderById, updateReminder } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { Reminder, ReminderRepeatType, ReminderWeekday } from '@/types/reminder';
-import { getTodayWeekday } from '@/utils/dueDate';
+import { getTodayDateKey, getTodayWeekday } from '@/utils/dueDate';
 import {
+  formatDateKeyForInput,
   normalizeRepeatWeekdays,
   parseCustomIntervalDays,
+  validateFutureOneTimeSchedule,
+  validateRequiredDate,
   validateRequiredTime,
 } from '@/utils/reminderValidation';
 
 type FormErrors = {
   title?: string;
+  dueDate?: string;
   time?: string;
   customIntervalDays?: string;
   repeatWeekdays?: string;
@@ -38,6 +43,7 @@ export default function EditReminderScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isNoteVisible, setIsNoteVisible] = useState(false);
+  const [dueDate, setDueDate] = useState(() => formatDateKeyForInput(getTodayDateKey()));
   const [time, setTime] = useState('');
   const [repeatType, setRepeatType] = useState<ReminderRepeatType>('daily');
   const [repeatWeekdays, setRepeatWeekdays] = useState<ReminderWeekday[]>([getTodayWeekday()]);
@@ -79,6 +85,7 @@ export default function EditReminderScreen() {
         setTitle(storedReminder.title);
         setDescription(storedReminder.description ?? '');
         setIsNoteVisible(Boolean(storedReminder.description));
+        setDueDate(formatDateKeyForInput(storedReminder.dueDate));
         setTime(storedReminder.time ?? '');
         setRepeatType(storedReminder.repeatType);
         setRepeatWeekdays(storedReminder.repeatWeekdays ?? [getTodayWeekday()]);
@@ -105,6 +112,8 @@ export default function EditReminderScreen() {
 
     const normalizedTitle = title.trim();
     const timeValidation = validateRequiredTime(time);
+    const dateValidation =
+      repeatType === 'once' ? validateRequiredDate(dueDate) : null;
     const parsedCustomIntervalDays = parseCustomIntervalDays(customIntervalDays, repeatType);
     const normalizedWeekdays = normalizeRepeatWeekdays(repeatType, repeatWeekdays);
     const nextErrors: FormErrors = {};
@@ -117,6 +126,10 @@ export default function EditReminderScreen() {
       nextErrors.time = timeValidation.error;
     }
 
+    if (dateValidation && !dateValidation.isValid) {
+      nextErrors.dueDate = dateValidation.error;
+    }
+
     if (parsedCustomIntervalDays === undefined) {
       nextErrors.customIntervalDays = 'Mindestens 1 Tag.';
     }
@@ -126,9 +139,33 @@ export default function EditReminderScreen() {
     }
 
     if (
+      reminder &&
+      repeatType === 'once' &&
+      dateValidation?.isValid &&
+      timeValidation.isValid
+    ) {
+      const oneTimeScheduleChanged =
+        reminder.repeatType !== 'once' ||
+        dateValidation.value !== reminder.dueDate ||
+        timeValidation.value !== reminder.time;
+
+      if (oneTimeScheduleChanged) {
+        const scheduleValidation = validateFutureOneTimeSchedule(
+          dateValidation.value,
+          timeValidation.value
+        );
+
+        if (!scheduleValidation.isValid) {
+          nextErrors[scheduleValidation.field] = scheduleValidation.error;
+        }
+      }
+    }
+
+    if (
       Object.keys(nextErrors).length > 0 ||
       !reminder ||
-      !timeValidation.isValid
+      !timeValidation.isValid ||
+      (repeatType === 'once' && !dateValidation?.isValid)
     ) {
       setErrors(nextErrors);
       return;
@@ -144,6 +181,7 @@ export default function EditReminderScreen() {
         title: normalizedTitle,
         description,
         time: timeValidation.value,
+        dueDate: dateValidation?.isValid ? dateValidation.value : undefined,
         repeatType,
         customIntervalDays: parsedCustomIntervalDays,
         repeatWeekdays: normalizedWeekdays,
@@ -250,6 +288,17 @@ export default function EditReminderScreen() {
                   </Pressable>
                 )}
 
+                {repeatType === 'once' ? (
+                  <DateInput
+                    value={dueDate}
+                    error={errors.dueDate}
+                    onChangeText={(value) => {
+                      setDueDate(value);
+                      clearError('dueDate');
+                    }}
+                  />
+                ) : null}
+
                 <TimeInput
                   value={time}
                   error={errors.time}
@@ -278,6 +327,7 @@ export default function EditReminderScreen() {
                     }
                     setErrors((currentErrors) => ({
                       ...currentErrors,
+                      dueDate: undefined,
                       customIntervalDays: undefined,
                       repeatWeekdays: undefined,
                     }));

@@ -12,6 +12,7 @@ type RepeatSelectorProps = {
 };
 
 const repeatOptions: { label: string; value: ReminderRepeatType }[] = [
+  { label: 'Einmalig', value: 'once' },
   { label: 'Täglich', value: 'daily' },
   { label: 'Wöchentlich', value: 'weekly' },
   { label: 'Monatlich', value: 'monthly' },

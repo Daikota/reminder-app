@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { DateInput } from '@/components/DateInput';
 import { RepeatSelector } from '@/components/RepeatSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
@@ -15,15 +16,19 @@ import { Radii, Spacing } from '@/constants/theme';
 import { createReminder } from '@/database/reminders';
 import { useTheme } from '@/hooks/use-theme';
 import type { ReminderRepeatType, ReminderWeekday } from '@/types/reminder';
-import { getTodayWeekday } from '@/utils/dueDate';
+import { getTodayDateKey, getTodayWeekday } from '@/utils/dueDate';
 import {
+  formatDateKeyForInput,
   normalizeRepeatWeekdays,
   parseCustomIntervalDays,
+  validateFutureOneTimeSchedule,
+  validateRequiredDate,
   validateRequiredTime,
 } from '@/utils/reminderValidation';
 
 type FormErrors = {
   title?: string;
+  dueDate?: string;
   time?: string;
   customIntervalDays?: string;
   repeatWeekdays?: string;
@@ -34,8 +39,9 @@ export default function CreateReminderScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isNoteVisible, setIsNoteVisible] = useState(false);
+  const [dueDate, setDueDate] = useState(() => formatDateKeyForInput(getTodayDateKey()));
   const [time, setTime] = useState('');
-  const [repeatType, setRepeatType] = useState<ReminderRepeatType>('daily');
+  const [repeatType, setRepeatType] = useState<ReminderRepeatType>('once');
   const [repeatWeekdays, setRepeatWeekdays] = useState<ReminderWeekday[]>([getTodayWeekday()]);
   const [customIntervalDays, setCustomIntervalDays] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
@@ -55,6 +61,8 @@ export default function CreateReminderScreen() {
 
     const normalizedTitle = title.trim();
     const timeValidation = validateRequiredTime(time);
+    const dateValidation =
+      repeatType === 'once' ? validateRequiredDate(dueDate) : null;
     const parsedCustomIntervalDays = parseCustomIntervalDays(customIntervalDays, repeatType);
     const normalizedWeekdays = normalizeRepeatWeekdays(repeatType, repeatWeekdays);
     const nextErrors: FormErrors = {};
@@ -67,6 +75,10 @@ export default function CreateReminderScreen() {
       nextErrors.time = timeValidation.error;
     }
 
+    if (dateValidation && !dateValidation.isValid) {
+      nextErrors.dueDate = dateValidation.error;
+    }
+
     if (parsedCustomIntervalDays === undefined) {
       nextErrors.customIntervalDays = 'Mindestens 1 Tag.';
     }
@@ -75,7 +87,26 @@ export default function CreateReminderScreen() {
       nextErrors.repeatWeekdays = 'Bitte mindestens einen Tag wählen.';
     }
 
-    if (Object.keys(nextErrors).length > 0 || !timeValidation.isValid) {
+    if (
+      repeatType === 'once' &&
+      dateValidation?.isValid &&
+      timeValidation.isValid
+    ) {
+      const scheduleValidation = validateFutureOneTimeSchedule(
+        dateValidation.value,
+        timeValidation.value
+      );
+
+      if (!scheduleValidation.isValid) {
+        nextErrors[scheduleValidation.field] = scheduleValidation.error;
+      }
+    }
+
+    if (
+      Object.keys(nextErrors).length > 0 ||
+      !timeValidation.isValid ||
+      (repeatType === 'once' && !dateValidation?.isValid)
+    ) {
       setErrors(nextErrors);
       return;
     }
@@ -89,6 +120,7 @@ export default function CreateReminderScreen() {
         title: normalizedTitle,
         description,
         time: timeValidation.value,
+        dueDate: dateValidation?.isValid ? dateValidation.value : undefined,
         repeatType,
         customIntervalDays: parsedCustomIntervalDays,
         repeatWeekdays: normalizedWeekdays,
@@ -172,6 +204,17 @@ export default function CreateReminderScreen() {
                 </Pressable>
               )}
 
+              {repeatType === 'once' ? (
+                <DateInput
+                  value={dueDate}
+                  error={errors.dueDate}
+                  onChangeText={(value) => {
+                    setDueDate(value);
+                    clearError('dueDate');
+                  }}
+                />
+              ) : null}
+
               <TimeInput
                 value={time}
                 error={errors.time}
@@ -200,6 +243,7 @@ export default function CreateReminderScreen() {
                   }
                   setErrors((currentErrors) => ({
                     ...currentErrors,
+                    dueDate: undefined,
                     customIntervalDays: undefined,
                     repeatWeekdays: undefined,
                   }));

@@ -18,6 +18,7 @@ require.extensions['.ts'] = function loadTypeScript(module, filename) {
 
 const {
   getOrphanedReminderNotificationIds,
+  getReminderNotificationDate,
   getReminderNotificationOwnership,
   getNotificationTriggerChannelId,
   isStaleReminderNotification,
@@ -83,6 +84,37 @@ test('past reminder timestamp does not receive a notification', () => {
       reminder({
         dueDate: '2026-07-21',
         time: '08:00',
+      }),
+      NOW
+    ),
+    false
+  );
+});
+
+test('one-time notification uses the selected local date and time', () => {
+  const notificationDate = getReminderNotificationDate(
+    reminder({
+      dueDate: '2026-12-31',
+      time: '23:45',
+    }),
+    NOW
+  );
+
+  assert.ok(notificationDate);
+  assert.equal(notificationDate.getFullYear(), 2026);
+  assert.equal(notificationDate.getMonth(), 11);
+  assert.equal(notificationDate.getDate(), 31);
+  assert.equal(notificationDate.getHours(), 23);
+  assert.equal(notificationDate.getMinutes(), 45);
+});
+
+test('completed one-time reminder does not receive a notification', () => {
+  assert.equal(
+    shouldReminderHaveNotification(
+      reminder({
+        isCompleted: true,
+        dueDate: '2026-12-31',
+        time: '23:45',
       }),
       NOW
     ),
