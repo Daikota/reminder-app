@@ -50,7 +50,6 @@ async function ensureReminderChannel() {
     name: 'Erinnerungen',
     description: 'Fällige Erinnerungen mit Ton und Vibration',
     importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
     enableVibrate: true,
     vibrationPattern: REMINDER_VIBRATION_PATTERN,
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -101,7 +100,7 @@ export async function scheduleReminderNotification(reminder: Reminder) {
         ...(Platform.OS === 'android'
           ? {
               priority: Notifications.AndroidNotificationPriority.HIGH,
-              sound: 'default' as const,
+              sound: true,
               vibrate: REMINDER_VIBRATION_PATTERN,
             }
           : {}),
